@@ -1,0 +1,89 @@
+package com.drillbit.ui.components
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.drillbit.ui.theme.dbColors
+
+/**
+ * 对话角色：用户（右侧主色气泡）/ 模型（左侧卡片气泡）。
+ *
+ * 分工方案未给出该枚举声明，按 7.6 节注释「ME / AI」定义。
+ */
+enum class ChatRole { ME, AI }
+
+/**
+ * 对话气泡：ME 靠右主色底，AI 靠左卡片底。
+ *
+ * streaming = true 时在气泡内提示「正在生成…」；showSave = true 时在 AI 气泡底部给出「保存到笔记」入口。
+ */
+@Composable
+fun ChatBubble(
+    role: ChatRole,
+    text: String,
+    modifier: Modifier = Modifier,
+    streaming: Boolean = false,
+    showSave: Boolean = false,
+    onSave: () -> Unit = {},
+) {
+    val colors = dbColors()
+    val isMe = role == ChatRole.ME
+    val shape = if (isMe) {
+        RoundedCornerShape(topStart = 13.dp, topEnd = 13.dp, bottomEnd = 4.dp, bottomStart = 13.dp)
+    } else {
+        RoundedCornerShape(topStart = 13.dp, topEnd = 13.dp, bottomEnd = 13.dp, bottomStart = 4.dp)
+    }
+    Box(
+        modifier = modifier.fillMaxWidth(),
+        contentAlignment = if (isMe) Alignment.CenterEnd else Alignment.CenterStart,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth(0.86f)
+                .clip(shape)
+                .background(if (isMe) colors.primary else colors.card)
+                .then(if (isMe) Modifier else Modifier.border(1.dp, colors.line, shape))
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+        ) {
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 21.sp),
+                color = if (isMe) colors.onPrimary else colors.text,
+            )
+            if (streaming) {
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    text = "正在生成…",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = colors.text2,
+                )
+            }
+            if (!isMe && showSave) {
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = "保存到笔记",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = colors.primary,
+                    modifier = Modifier.clickable(onClick = onSave),
+                )
+            }
+        }
+    }
+}

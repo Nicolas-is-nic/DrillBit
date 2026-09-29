@@ -216,3 +216,21 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+
+agent_docs
+agent_scripts
+# ===== Android =====
+# 签名与本地配置（丢失 keystore 无法覆盖升级，需另行备份）
+*.keystore
+keystore.properties
+local.properties
+
+# Gradle
+.gradle/
+build/
+app/build/
+
+# IDE
+.idea/
+*.iml
