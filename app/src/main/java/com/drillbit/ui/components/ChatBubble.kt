@@ -2,7 +2,6 @@ package com.drillbit.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -73,7 +72,8 @@ fun ChatBubble(
             } else {
                 // AI 回答完成：Markdown 富渲染（列表/代码块/加粗等），配色自动跟随 MaterialTheme
                 Markdown(
-                    content = text,
+                    // 压缩 3+ 连续换行为标准段落分隔，避免模型输出多余空行导致大片留白
+                    content = text.replace(Regex("\\n{3,}"), "\\n\\n"),
                     typography = markdownTypography(
                         text = MaterialTheme.typography.bodyMedium.copy(lineHeight = 21.sp),
                     ),
@@ -89,12 +89,12 @@ fun ChatBubble(
             }
             if (!isMe && showSave) {
                 Spacer(Modifier.height(8.dp))
-                Text(
+                // 标准按钮替代小热区文字：滚动容器内点击更可靠（真机反馈：文字点击无反应）
+                DBButton(
                     text = "保存到笔记",
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = colors.primary,
-                    modifier = Modifier.clickable(onClick = onSave),
+                    onClick = onSave,
+                    type = DBButtonType.GHOST,
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
         }

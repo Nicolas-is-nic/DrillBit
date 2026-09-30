@@ -73,7 +73,7 @@ fun DigestScreen(state: DigestUiState, onEvent: (DigestEvent) -> Unit) {
                         Spacer(Modifier.height(7.dp))
                         // 归纳稿正文为模型生成的 Markdown：富渲染（列表/加粗/行内代码），配色自动跟随主题
                         com.mikepenz.markdown.m3.Markdown(
-                            content = section.body,
+                            content = section.body.replace(Regex("\\n{3,}"), "\\n\\n"),
                             typography = com.mikepenz.markdown.m3.markdownTypography(
                                 text = MaterialTheme.typography.bodySmall.copy(lineHeight = 21.sp),
                             ),
