@@ -21,7 +21,7 @@ android {
         applicationId = "com.drillbit"
         minSdk = 28
         targetSdk = 35
-        versionCode = 1
+        versionCode = 8
         versionName = "0.1.0"
     }
 

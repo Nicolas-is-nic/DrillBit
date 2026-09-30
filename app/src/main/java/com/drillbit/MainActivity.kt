@@ -7,27 +7,36 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.launch
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.drillbit.ServiceLocator
 import com.drillbit.ui.banks.BankDetailEvent
+import com.drillbit.ui.banks.BankDetailViewModel
 import com.drillbit.ui.banks.BankDetailScreen
 import com.drillbit.ui.banks.BankDetailUiState
 import com.drillbit.ui.banks.BankListEvent
+import com.drillbit.ui.banks.BankListViewModel
 import com.drillbit.ui.banks.BankListScreen
 import com.drillbit.ui.banks.BankListUiState
 import com.drillbit.ui.chat.ChatEvent
 import com.drillbit.ui.chat.ChatScreen
-import com.drillbit.ui.chat.ChatUiState
+import com.drillbit.ui.chat.ChatViewModel
 import com.drillbit.ui.components.CrashDialog
 import com.drillbit.ui.components.CrashDialogEvent
 import com.drillbit.ui.components.CrashDialogUi
@@ -35,19 +44,21 @@ import com.drillbit.ui.components.DbBottomNavBar
 import com.drillbit.ui.components.dbTabs
 import com.drillbit.ui.notes.BackupEvent
 import com.drillbit.ui.notes.BackupScreen
-import com.drillbit.ui.notes.BackupUiState
+import com.drillbit.ui.notes.BackupViewModel
 import com.drillbit.ui.notes.DigestEvent
 import com.drillbit.ui.notes.DigestScreen
-import com.drillbit.ui.notes.DigestUiState
+import com.drillbit.ui.notes.DigestViewModel
 import com.drillbit.ui.notes.NoteEditEvent
 import com.drillbit.ui.notes.NoteEditScreen
-import com.drillbit.ui.notes.NoteEditUiState
+import com.drillbit.ui.notes.NoteEditViewModel
 import com.drillbit.ui.notes.NoteListEvent
 import com.drillbit.ui.notes.NoteListScreen
-import com.drillbit.ui.notes.NoteListUiState
+import com.drillbit.ui.notes.NoteListViewModel
 import com.drillbit.ui.quiz.MixConfigEvent
 import com.drillbit.ui.quiz.MixConfigScreen
 import com.drillbit.ui.quiz.MixConfigUiState
+import com.drillbit.ui.quiz.MixConfigViewModel
+import com.drillbit.ui.quiz.QuizViewModel
 import com.drillbit.ui.quiz.QuestionUi
 import com.drillbit.ui.quiz.QuizEvent
 import com.drillbit.ui.quiz.QuizMode
@@ -57,18 +68,20 @@ import com.drillbit.ui.quiz.QuizUiState
 import com.drillbit.ui.settings.ApiType
 import com.drillbit.ui.settings.ModelConfigEvent
 import com.drillbit.ui.settings.ModelConfigScreen
-import com.drillbit.ui.settings.ModelConfigUiState
+import com.drillbit.ui.settings.ModelConfigViewModel
 import com.drillbit.ui.settings.ServerConfigEvent
 import com.drillbit.ui.settings.ServerConfigScreen
-import com.drillbit.ui.settings.ServerConfigUiState
+import com.drillbit.ui.settings.ServerConfigViewModel
+
 import com.drillbit.ui.settings.SettingsEvent
 import com.drillbit.ui.settings.SettingsScreen
-import com.drillbit.ui.settings.SettingsUiState
+import com.drillbit.ui.settings.SettingsViewModel
+
 import com.drillbit.ui.theme.DrillBitTheme
 import com.drillbit.ui.theme.dbColors
 import com.drillbit.ui.wrong.WrongListEvent
 import com.drillbit.ui.wrong.WrongListScreen
-import com.drillbit.ui.wrong.WrongListUiState
+import com.drillbit.ui.wrong.WrongListViewModel
 
 /** 底部导航常驻的 Tab 路由集合 */
 private val tabRoutes = dbTabs.map { it.route }.toSet()
@@ -83,23 +96,36 @@ class MainActivity : ComponentActivity() {
             if (f.exists()) f.readText().also { f.delete() } else null
         }.getOrNull()
         setContent {
-            // 阶段 1 由内存态持有主题开关（默认亮色），阶段 2 接 DataStore 持久化
+            // 深色模式归属（已拍板）：DataStore 唯一存储，启动后收集并持有，向下单向传递
             var darkTheme by remember { mutableStateOf(false) }
+            LaunchedEffect(Unit) {
+                ServiceLocator.settingsStore.settings.collect { darkTheme = it.darkMode }
+            }
+            val onDarkModeChange: (Boolean) -> Unit = { on ->
+                darkTheme = on
+                lifecycleScope.launch { ServiceLocator.settingsStore.setDarkMode(on) }
+            }
+            // 崩溃文本读后暂存（设置页「有崩溃日志」与重新查看入口用）
+            DrillBitApplication.lastCrashLog = crashText
             var crashVisible by remember { mutableStateOf(!crashText.isNullOrBlank()) }
+            val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
             DrillBitTheme(darkTheme = darkTheme) {
                 DrillBitApp(
                     darkTheme = darkTheme,
-                    onDarkModeChange = { on -> darkTheme = on },
+                    onDarkModeChange = onDarkModeChange,
+                    onShowCrashLog = { crashVisible = true },
                 )
                 if (crashVisible) {
                     CrashDialog(
-                        state = CrashDialogUi(
-                            timeText = "",
-                            versionText = "",
-                            stackText = crashText.orEmpty(),
-                        ),
+                        state = parseCrash(crashText),
                         onEvent = { event ->
-                            if (event is CrashDialogEvent.Close) crashVisible = false
+                            when (event) {
+                                CrashDialogEvent.Copy -> clipboard.setText(
+                                    androidx.compose.ui.text.AnnotatedString(crashText.orEmpty()),
+                                )
+
+                                CrashDialogEvent.Close -> crashVisible = false
+                            }
                         },
                     )
                 }
@@ -117,6 +143,7 @@ class MainActivity : ComponentActivity() {
 fun DrillBitApp(
     darkTheme: Boolean,
     onDarkModeChange: (Boolean) -> Unit,
+    onShowCrashLog: () -> Unit,
 ) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -150,48 +177,41 @@ fun DrillBitApp(
         ) {
             // ===== 四 Tab 主页 =====
             composable("banks") {
+                val vm: BankListViewModel = viewModel()
+                val state by vm.state.collectAsState()
                 BankListScreen(
-                    state = BankListUiState(
-                        banks = emptyList(),
-                        syncing = false,
-                        lastSyncText = "尚未同步",
-                        updateDialog = null,
-                    ),
+                    state = state,
                     onEvent = { event ->
                         when (event) {
                             is BankListEvent.BankClick ->
                                 navController.navigate("bankDetail/${event.bankId}")
 
                             BankListEvent.MixClick -> navController.navigate("mixConfig")
-                            BankListEvent.SyncClick,
-                            BankListEvent.UpdateConfirm,
-                            BankListEvent.UpdateCancel,
-                            -> Unit
+                            else -> vm.onEvent(event)
                         }
                     },
                 )
             }
             composable("wrong") {
+                val vm: WrongListViewModel = viewModel()
+                val state by vm.state.collectAsState()
                 WrongListScreen(
-                    state = WrongListUiState(
-                        items = emptyList(),
-                        summaryText = "共 0 题待清 · 每答对一次，计数减一，减到 0 移出错题集",
-                    ),
+                    state = state,
                     onEvent = { event ->
                         when (event) {
-                            is WrongListEvent.ItemClick -> Unit
-                            WrongListEvent.RetryAll -> navController.navigate("quiz?mode=retry")
+                            WrongListEvent.RetryAll -> vm.startRetry { ok ->
+                                if (ok) navController.navigate("quiz?mode=retry")
+                            }
+                            else -> vm.onEvent(event)
                         }
                     },
                 )
             }
             composable("notes") {
+                val vm: NoteListViewModel = viewModel()
+                val state by vm.state.collectAsState()
                 NoteListScreen(
-                    state = NoteListUiState(
-                        items = emptyList(),
-                        summaryText = "共 0 条 · 尚未备份",
-                        summarizing = false,
-                    ),
+                    state = state,
                     onEvent = { event ->
                         when (event) {
                             is NoteListEvent.NoteClick ->
@@ -205,25 +225,18 @@ fun DrillBitApp(
                 )
             }
             composable("settings") {
+                val vm: SettingsViewModel = viewModel()
+                val state by vm.state.collectAsState()
                 SettingsScreen(
-                    state = SettingsUiState(
-                        darkMode = darkTheme,
-                        serverConfigured = false,
-                        updateAvailableText = null,
-                        modelSummary = "未配置",
-                        lastBackupText = "--",
-                        versionText = "v${BuildConfig.VERSION_NAME}（${BuildConfig.VERSION_CODE}）",
-                        hasCrashLog = false,
-                    ),
+                    state = state,
                     onEvent = { event ->
                         when (event) {
                             is SettingsEvent.DarkModeChange -> onDarkModeChange(event.on)
                             SettingsEvent.ServerClick -> navController.navigate("serverConfig")
                             SettingsEvent.ModelClick -> navController.navigate("modelConfig")
                             SettingsEvent.BackupClick -> navController.navigate("backup")
-                            SettingsEvent.CheckUpdate,
-                            SettingsEvent.CrashLogClick,
-                            -> Unit
+                            SettingsEvent.CrashLogClick -> onShowCrashLog()
+                            SettingsEvent.CheckUpdate -> vm.onEvent(event)
                         }
                     },
                 )
@@ -232,49 +245,48 @@ fun DrillBitApp(
             // ===== 二级页 =====
             composable("bankDetail/{bankId}") { entry ->
                 val bankId = entry.arguments?.getString("bankId").orEmpty()
+                val vm: BankDetailViewModel = viewModel(
+                    key = "bankDetail/$bankId",
+                    factory = BankDetailViewModel.Factory(bankId),
+                )
+                val state by vm.state.collectAsState()
                 BankDetailScreen(
-                    state = BankDetailUiState(
-                        bankId = bankId,
-                        name = "题库详情",
-                        total = 0,
-                        done = 0,
-                        lastSyncText = "--",
-                        serverVersionText = "--",
-                        hasUpdate = false,
-                        deleteConfirmVisible = false,
-                    ),
+                    state = state,
                     onEvent = { event ->
                         when (event) {
                             BankDetailEvent.ContinueClick,
                             BankDetailEvent.RestartClick,
-                            -> navController.navigate("quiz?mode=single&bankId=$bankId")
+                            -> {
+                                vm.onEvent(event)
+                                navController.navigate("quiz?mode=single&bankId=$bankId")
+                            }
 
                             BankDetailEvent.Back -> navController.popBackStack()
-                            BankDetailEvent.CheckUpdateClick,
-                            BankDetailEvent.DeleteClick,
-                            BankDetailEvent.DeleteConfirm,
-                            BankDetailEvent.DeleteCancel,
-                            -> Unit
+                            BankDetailEvent.DeleteConfirm -> {
+                                vm.onEvent(event)
+                                navController.popBackStack()
+                            }
+                            else -> vm.onEvent(event)
                         }
                     },
                 )
             }
             composable("mixConfig") {
+                val vm: MixConfigViewModel = viewModel()
+                val state by vm.state.collectAsState()
+                val scope = rememberCoroutineScope()
                 MixConfigScreen(
-                    state = MixConfigUiState(
-                        banks = emptyList(),
-                        count = 10,
-                        minCount = 10,
-                        step = 10,
-                    ),
+                    state = state,
                     onEvent = { event ->
                         when (event) {
-                            MixConfigEvent.Start -> navController.navigate("quiz?mode=mix")
+                            MixConfigEvent.Start -> scope.launch {
+                                // 建卷成功才进入刷题页（未勾选时不导航）
+                                if (vm.buildSession()) {
+                                    navController.navigate("quiz?mode=mix")
+                                }
+                            }
                             MixConfigEvent.Back -> navController.popBackStack()
-                            is MixConfigEvent.ToggleBank,
-                            MixConfigEvent.Minus,
-                            MixConfigEvent.Plus,
-                            -> Unit
+                            else -> vm.onEvent(event)
                         }
                     },
                 )
@@ -291,93 +303,75 @@ fun DrillBitApp(
                     "retry" -> QuizMode.RETRY
                     else -> QuizMode.SINGLE
                 }
+                val bankId = entry.arguments?.getString("bankId").orEmpty()
+                val vm: QuizViewModel = viewModel(
+                    key = "quiz/$mode/$bankId",
+                    factory = QuizViewModel.Factory(mode, bankId),
+                )
+                val state by vm.state.collectAsState()
                 QuizScreen(
-                    state = QuizUiState(
-                        mode = mode,
-                        title = when (mode) {
-                            QuizMode.MIX -> "混合卷"
-                            QuizMode.RETRY -> "错题重考"
-                            QuizMode.SINGLE -> "刷题"
-                        },
-                        currentIndex = 0,
-                        totalCount = 0,
-                        correctCount = 0,
-                        progress = 0f,
-                        phase = QuizPhase.ANSWERING,
-                        question = QuestionUi(
-                            stem = "",
-                            options = emptyList(),
-                            sourceBankName = null,
-                        ),
-                        answered = null,
-                        finished = false,
-                    ),
+                    state = state,
                     onEvent = { event ->
                         when (event) {
-                            QuizEvent.AskAi -> navController.navigate("chat")
+                            QuizEvent.AskAi -> navController.navigate("chat?questionId=${vm.currentQuestionId()}")
                             QuizEvent.Back -> navController.popBackStack()
-                            is QuizEvent.OptionClick,
-                            QuizEvent.Next,
-                            -> Unit
+                            else -> vm.onEvent(event)
                         }
                     },
                 )
             }
             composable("noteEdit/{noteId}") { entry ->
+                val noteId = entry.arguments?.getString("noteId").orEmpty()
+                val vm: NoteEditViewModel = viewModel(
+                    key = "noteEdit/$noteId",
+                    factory = NoteEditViewModel.Factory(noteId),
+                )
+                val state by vm.state.collectAsState()
                 NoteEditScreen(
-                    state = NoteEditUiState(
-                        noteId = entry.arguments?.getString("noteId").orEmpty(),
-                        title = "",
-                        content = "",
-                        sourceQuestionText = null,
-                        deleteConfirmVisible = false,
-                    ),
+                    state = state,
                     onEvent = { event ->
                         when (event) {
                             NoteEditEvent.Back -> navController.popBackStack()
-                            is NoteEditEvent.TitleChange,
-                            is NoteEditEvent.ContentChange,
-                            NoteEditEvent.Save,
-                            NoteEditEvent.SourceClick,
-                            NoteEditEvent.DeleteClick,
-                            NoteEditEvent.DeleteConfirm,
-                            NoteEditEvent.DeleteCancel,
-                            -> Unit
+                            NoteEditEvent.Save -> {
+                                vm.onEvent(event)
+                                navController.popBackStack()
+                            }
+                            NoteEditEvent.DeleteConfirm -> {
+                                vm.onEvent(event)
+                                navController.popBackStack()
+                            }
+                            NoteEditEvent.SourceClick -> {
+                                vm.sourceBankId()?.let { bankId ->
+                                    navController.navigate("quiz?mode=single&bankId=$bankId")
+                                }
+                            }
+                            else -> vm.onEvent(event)
                         }
                     },
                 )
             }
             composable("digest") {
+                val vm: DigestViewModel = viewModel()
+                val state by vm.state.collectAsState()
                 DigestScreen(
-                    state = DigestUiState(
-                        metaText = "尚无归纳稿",
-                        sections = emptyList(),
-                        streaming = false,
-                        footerText = "",
-                    ),
+                    state = state,
                     onEvent = { event ->
                         when (event) {
                             DigestEvent.Back -> navController.popBackStack()
-                            DigestEvent.Regenerate,
-                            DigestEvent.ViewFull,
-                            -> Unit
+                            else -> vm.onEvent(event)
                         }
                     },
                 )
             }
             composable("backup") {
+                val vm: BackupViewModel = viewModel()
+                val state by vm.state.collectAsState()
                 BackupScreen(
-                    state = BackupUiState(
-                        lastBackupText = "--",
-                        backedCount = 0,
-                        serverHost = "未配置",
-                        uploading = false,
-                        resultBanner = null,
-                    ),
+                    state = state,
                     onEvent = { event ->
                         when (event) {
                             BackupEvent.Back -> navController.popBackStack()
-                            BackupEvent.Upload -> Unit
+                            else -> vm.onEvent(event)
                         }
                     },
                 )
@@ -387,74 +381,69 @@ fun DrillBitApp(
                 arguments = listOf(
                     navArgument("questionId") { defaultValue = "" },
                 ),
-            ) {
+            ) { entry ->
+                val questionId = entry.arguments?.getString("questionId").orEmpty()
+                val vm: ChatViewModel = viewModel(
+                    key = "chat/$questionId",
+                    factory = ChatViewModel.Factory(questionId),
+                )
+                val state by vm.state.collectAsState()
                 ChatScreen(
-                    state = ChatUiState(
-                        modelName = "未配置",
-                        contextSummary = "",
-                        messages = emptyList(),
-                        input = "",
-                        sending = false,
-                        errorBannerText = null,
-                        saveDialog = null,
-                    ),
+                    state = state,
                     onEvent = { event ->
                         when (event) {
                             ChatEvent.Back -> navController.popBackStack()
-                            is ChatEvent.InputChange,
-                            ChatEvent.Send,
-                            ChatEvent.SaveClick,
-                            is ChatEvent.SaveConfirm,
-                            ChatEvent.SaveCancel,
-                            -> Unit
+                            else -> vm.onEvent(event)
                         }
                     },
                 )
             }
             composable("modelConfig") {
+                val vm: ModelConfigViewModel = viewModel()
+                val state by vm.state.collectAsState()
                 ModelConfigScreen(
-                    state = ModelConfigUiState(
-                        apiType = ApiType.OPENAI,
-                        url = "",
-                        apiKey = "",
-                        modelName = "",
-                        testing = false,
-                        testResult = null,
-                    ),
+                    state = state,
                     onEvent = { event ->
                         when (event) {
                             ModelConfigEvent.Back -> navController.popBackStack()
-                            is ModelConfigEvent.TypeChange,
-                            is ModelConfigEvent.UrlChange,
-                            is ModelConfigEvent.KeyChange,
-                            is ModelConfigEvent.NameChange,
-                            ModelConfigEvent.Test,
-                            ModelConfigEvent.Save,
-                            -> Unit
+                            else -> vm.onEvent(event)
                         }
                     },
                 )
             }
             composable("serverConfig") {
+                val vm: ServerConfigViewModel = viewModel()
+                val state by vm.state.collectAsState()
                 ServerConfigScreen(
-                    state = ServerConfigUiState(
-                        url = "",
-                        token = "",
-                        testing = false,
-                        testResult = null,
-                    ),
+                    state = state,
                     onEvent = { event ->
                         when (event) {
                             ServerConfigEvent.Back -> navController.popBackStack()
-                            is ServerConfigEvent.UrlChange,
-                            is ServerConfigEvent.TokenChange,
-                            ServerConfigEvent.Test,
-                            ServerConfigEvent.Save,
-                            -> Unit
+                            else -> vm.onEvent(event)
                         }
                     },
                 )
             }
         }
     }
+}
+
+/** 解析崩溃日志文本为弹窗 state：提取「时间：」「版本：」行，其余为堆栈 */
+private fun parseCrash(text: String?): com.drillbit.ui.components.CrashDialogUi {
+    val full = text.orEmpty()
+    var time = ""
+    var version = ""
+    val stack = StringBuilder()
+    full.lines().forEach { line ->
+        when {
+            line.startsWith("时间：") -> time = line.removePrefix("时间：")
+            line.startsWith("版本：") -> version = line.removePrefix("版本：")
+            else -> stack.appendLine(line)
+        }
+    }
+    return com.drillbit.ui.components.CrashDialogUi(
+        timeText = time,
+        versionText = version,
+        stackText = stack.toString().trim(),
+    )
 }

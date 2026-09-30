@@ -26,6 +26,11 @@ import com.drillbit.ui.components.TagChip
 import com.drillbit.ui.components.TagChipType
 import com.drillbit.ui.theme.DrillBitTheme
 import com.drillbit.ui.theme.dbColors
+import com.drillbit.ui.components.DBButton
+import com.drillbit.ui.components.ExplainCard
+import com.drillbit.ui.components.OptionRow
+import com.drillbit.ui.components.OptionState
+import com.drillbit.ui.components.ScrimModal
 
 /** P8 错题集（Tab2）：错题行带重考计数，顶部「全部重考」发起一次重考 */
 @Composable
@@ -74,6 +79,10 @@ fun WrongListScreen(state: WrongListUiState, onEvent: (WrongListEvent) -> Unit) 
                 Spacer(Modifier.height(16.dp))
             }
         }
+        // 方案 A：错题详情就地弹层（只读题面，复用通用组件）
+        state.detailDialog?.let { detail ->
+            WrongDetailDialog(detail = detail, onEvent = onEvent)
+        }
     }
 }
 
@@ -106,6 +115,42 @@ private fun WrongRow(item: WrongItem, onClick: () -> Unit) {
                 color = colors.text2,
             )
         }
+    }
+}
+
+/** 错题详情弹层：完整题面 + 正确项标绿 + 解析 + 当前计数（只读态，方案 A） */
+@Composable
+private fun WrongDetailDialog(detail: WrongDetailUi, onEvent: (WrongListEvent) -> Unit) {
+    val colors = dbColors()
+    ScrimModal {
+        Text(
+            text = "重考计数 ${detail.countText}",
+            style = MaterialTheme.typography.labelMedium,
+            color = colors.primary,
+        )
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = detail.stem,
+            style = MaterialTheme.typography.titleMedium,
+            color = colors.text,
+        )
+        Spacer(Modifier.height(10.dp))
+        detail.options.forEachIndexed { index, option ->
+            OptionRow(
+                label = ('A' + index).toString(),
+                text = option,
+                state = if (index == detail.correctIndex) OptionState.GOOD else OptionState.DISABLED,
+            )
+            Spacer(Modifier.height(8.dp))
+        }
+        Spacer(Modifier.height(4.dp))
+        ExplainCard(title = "解析", body = detail.explanation)
+        Spacer(Modifier.height(12.dp))
+        DBButton(
+            text = "关闭",
+            onClick = { onEvent(WrongListEvent.DetailDismiss) },
+            modifier = Modifier.fillMaxWidth(),
+        )
     }
 }
 
@@ -142,12 +187,14 @@ private fun previewState() = WrongListUiState(
         ),
     ),
     summaryText = "共 14 题待清 · 每答对一次，计数减一，减到 0 移出错题集",
+    detailDialog = null,
 )
 
 /** 预览假数据：空态 */
 private fun previewEmptyState() = WrongListUiState(
     items = emptyList(),
     summaryText = "共 0 题待清 · 每答对一次，计数减一，减到 0 移出错题集",
+    detailDialog = null,
 )
 
 @Preview(name = "错题集 · 亮色", widthDp = 360, heightDp = 780)
