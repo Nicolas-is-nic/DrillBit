@@ -25,6 +25,14 @@ android {
         versionName = "0.1.0"
     }
 
+    // 产物命名：DrillBit-v<版本名>-<versionCode>-release.apk（避免与默认 app-release.apk 混淆，传手机时可直接辨认版本）
+    applicationVariants.all {
+        outputs.all {
+            val output = this as com.android.build.gradle.internal.api.BaseVariantOutputImpl
+            output.outputFileName = "DrillBit-v${versionName}-${versionCode}-release.apk"
+        }
+    }
+
     signingConfigs {
         create("release") {
             storeFile = rootProject.file("drillbit.keystore")
