@@ -37,7 +37,7 @@
 - `agent_docs/阶段1-UI交接说明与遗留问题.md`: UI 模型交接文档（契约缺口、工程坑、阶段 2 接线清单）
 - `agent_docs/安卓开发通用经验.md`: 跨项目安卓开发经验（环境、部署、架构模式、技术红线），必读
 - `agent_scripts/tmp/handoff-drillbit-app.md`: 项目启动交接文档（历史背景与决策记录）
-- `agent_docs/`、`agent_scripts/`: 已被 .gitignore 排除，不进 git
+- `agent_docs/`、`agent_scripts/`、`docs/`: 已被 .gitignore 排除，不进 git（2026-09-30 起 docs 从远端仓库移除，纯本地维护）
 
 ## 常用命令（App 工程建立后）
 

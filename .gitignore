@@ -234,3 +234,6 @@ app/build/
 # IDE
 .idea/
 *.iml
+
+# 设计文档（与 agent_docs 同为纯本地资料）
+docs/
