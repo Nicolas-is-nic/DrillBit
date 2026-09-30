@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -38,7 +37,9 @@ fun ScrimModal(
         modifier = Modifier
             .fillMaxSize()
             // 键盘弹出时整体上避，防止悬浮键盘盖住弹窗底部按钮（review m-1）
-            .imePadding()
+            // 注：曾加 imePadding 避让键盘，但卓易通容器 IME inset 回报异常，
+            // 把整个弹窗层（连遮罩）挤出屏幕导致点击保存无任何反应，已回退；
+            // 键盘遮挡由弹窗自身滚动能力兜底（限高+verticalScroll）
             .background(colors.scrim)
             .padding(horizontal = 20.dp),
         contentAlignment = Alignment.Center,
