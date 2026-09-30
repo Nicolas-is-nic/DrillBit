@@ -180,6 +180,7 @@ private fun SaveNoteDialog(dialog: SaveNoteDialogState, onEvent: (ChatEvent) -> 
             onChange = { content = it },
             singleLine = false,
             minHeight = 96.dp,
+            maxHeight = 220.dp,
         )
         Spacer(Modifier.height(12.dp))
         Row(modifier = Modifier.fillMaxWidth()) {

@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -52,6 +53,7 @@ fun DBTextField(
     password: Boolean = false,
     singleLine: Boolean = true,
     minHeight: Dp = 0.dp,
+    maxHeight: Dp = 0.dp,
     placeholder: String = "",
 ) {
     val colors = dbColors()
@@ -80,6 +82,8 @@ fun DBTextField(
                 .background(colors.card2)
                 .border(1.dp, colors.line, shape)
                 .defaultMinSize(minHeight = minHeight)
+                // 多行长文本限高：超出后输入区内部自行滚动，不再把弹窗撑爆
+                .then(if (maxHeight > 0.dp) Modifier.heightIn(max = maxHeight) else Modifier)
                 .padding(horizontal = 12.dp, vertical = 11.dp),
             verticalAlignment = if (singleLine) Alignment.CenterVertically else Alignment.Top,
         ) {

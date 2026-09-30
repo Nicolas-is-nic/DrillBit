@@ -87,6 +87,10 @@ class ModelConfigViewModel : ViewModel() {
                 model = current.modelName,
                 type = if (current.apiType == ApiType.ANTHROPIC) "anthropic" else "openai",
             )
+            // 保存后给可见反馈（真机问题 1：原先落库成功但界面无任何反应）
+            stateFlow.value = stateFlow.value.copy(
+                testResult = BannerUi("已保存", BannerType.OK),
+            )
         }
     }
 }

@@ -40,11 +40,7 @@ class LlmClient {
         channelFlow {
             withContext(Dispatchers.IO) {
                 val isAnthropic = settings.llmType == "anthropic"
-                val url = if (isAnthropic) {
-                    trimUrl(settings.llmUrl) + "/v1/messages"
-                } else {
-                    trimUrl(settings.llmUrl) + "/chat/completions"
-                }
+                val url = endpointUrl(settings.llmUrl, isAnthropic)
                 val body = if (isAnthropic) {
                     JSONObject()
                         .put("model", settings.llmModel)
@@ -103,11 +99,7 @@ class LlmClient {
     suspend fun testConnection(settings: DbSettings): Long = withContext(Dispatchers.IO) {
         val start = System.currentTimeMillis()
         val isAnthropic = settings.llmType == "anthropic"
-        val url = if (isAnthropic) {
-            trimUrl(settings.llmUrl) + "/v1/messages"
-        } else {
-            trimUrl(settings.llmUrl) + "/chat/completions"
-        }
+        val url = endpointUrl(settings.llmUrl, isAnthropic)
         val body = if (isAnthropic) {
             JSONObject()
                 .put("model", settings.llmModel)
@@ -149,6 +141,22 @@ class LlmClient {
 
     /** url 去尾部斜杠（用户配置可能带或不带结尾 /） */
     private fun trimUrl(url: String): String = url.trim().trimEnd('/')
+
+    /**
+     * 端点智能拼接（真机问题 2 修复）：用户填的可能是站点根（如 https://api.x.com/v1）
+     * 也可能是完整端点（已含 /chat/completions 或 /v1/messages）——已含则不重复拼。
+     */
+    private fun endpointUrl(base: String, isAnthropic: Boolean): String {
+        val url = trimUrl(base)
+        return if (isAnthropic) {
+            when {
+                url.endsWith("/v1/messages") || url.endsWith("/messages") -> url
+                else -> "$url/v1/messages"
+            }
+        } else {
+            if (url.endsWith("/chat/completions")) url else "$url/chat/completions"
+        }
+    }
 
     /** 从错误响应体提取可读原因 */
     private fun errorReason(body: String, code: Int): String = runCatching {
