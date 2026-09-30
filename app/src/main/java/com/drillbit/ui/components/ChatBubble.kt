@@ -20,6 +20,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.drillbit.ui.theme.dbColors
+import com.mikepenz.markdown.m3.Markdown
+import com.mikepenz.markdown.m3.markdownTypography
 
 /**
  * 对话角色：用户（右侧主色气泡）/ 模型（左侧卡片气泡）。
@@ -61,11 +63,22 @@ fun ChatBubble(
                 .then(if (isMe) Modifier else Modifier.border(1.dp, colors.line, shape))
                 .padding(horizontal = 12.dp, vertical = 10.dp),
         ) {
-            Text(
-                text = text,
-                style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 21.sp),
-                color = if (isMe) colors.onPrimary else colors.text,
-            )
+            if (isMe || streaming) {
+                // 用户消息与流式生成中：纯文本逐字显示（流式高频刷新，不做富渲染）
+                Text(
+                    text = text,
+                    style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 21.sp),
+                    color = if (isMe) colors.onPrimary else colors.text,
+                )
+            } else {
+                // AI 回答完成：Markdown 富渲染（列表/代码块/加粗等），配色自动跟随 MaterialTheme
+                Markdown(
+                    content = text,
+                    typography = markdownTypography(
+                        text = MaterialTheme.typography.bodyMedium.copy(lineHeight = 21.sp),
+                    ),
+                )
+            }
             if (streaming) {
                 Spacer(Modifier.height(6.dp))
                 Text(

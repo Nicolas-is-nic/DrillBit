@@ -21,7 +21,7 @@ android {
         applicationId = "com.drillbit"
         minSdk = 28
         targetSdk = 35
-        versionCode = 12
+        versionCode = 13
         versionName = "0.1.0"
     }
 
@@ -97,4 +97,7 @@ dependencies {
 
     // 网络请求（阶段 2 使用）
     implementation(libs.okhttp)
+
+    // Markdown 渲染（AI 回答与归纳稿：列表/代码块/加粗等，纯 Compose 实现）
+    implementation(libs.markdown.renderer.m3)
 }
