@@ -21,8 +21,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.drillbit.ui.theme.dbColors
 
-/** 选项状态：未作答 / 正确 / 误选 / 答后锁定（既非选中也非正确） */
-enum class OptionState { DEFAULT, GOOD, BAD, DISABLED }
+/** 选项状态：未作答 / 多选答前选中（主色描边）/ 正确 / 误选 / 答后锁定 */
+enum class OptionState { DEFAULT, SELECTED, GOOD, BAD, DISABLED }
 
 /**
  * 答题选项行：左侧字母块 + 选项文本。
@@ -41,6 +41,7 @@ fun OptionRow(
     val colors = dbColors()
     val shape = RoundedCornerShape(10.dp)
     val borderColor = when (state) {
+        OptionState.SELECTED -> colors.primary
         OptionState.GOOD -> colors.ok
         OptionState.BAD -> colors.bad
         OptionState.DEFAULT, OptionState.DISABLED -> colors.line
@@ -48,15 +49,17 @@ fun OptionRow(
     val rowBackground = when (state) {
         OptionState.GOOD -> colors.okBg
         OptionState.BAD -> colors.badBg
-        OptionState.DEFAULT, OptionState.DISABLED -> colors.card
+        OptionState.DEFAULT, OptionState.SELECTED, OptionState.DISABLED -> colors.card
     }
     val markBackground = when (state) {
         OptionState.GOOD -> colors.ok
+        OptionState.SELECTED -> colors.primary
         OptionState.BAD -> colors.bad
         OptionState.DEFAULT, OptionState.DISABLED -> colors.chip
     }
     val markColor = when (state) {
         OptionState.GOOD, OptionState.BAD -> colors.card
+        OptionState.SELECTED -> colors.onPrimary
         OptionState.DISABLED -> colors.off
         OptionState.DEFAULT -> colors.text2
     }
@@ -64,7 +67,7 @@ fun OptionRow(
     val flagText = when (state) {
         OptionState.GOOD -> "正确"
         OptionState.BAD -> "你选"
-        OptionState.DEFAULT, OptionState.DISABLED -> null
+        OptionState.DEFAULT, OptionState.SELECTED, OptionState.DISABLED -> null
     }
     val clickable = if (onClick != null && state != OptionState.DISABLED) {
         Modifier.clickable(onClick = onClick)

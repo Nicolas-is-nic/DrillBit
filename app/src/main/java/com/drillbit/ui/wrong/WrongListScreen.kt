@@ -118,7 +118,7 @@ private fun WrongRow(item: WrongItem, onClick: () -> Unit) {
     }
 }
 
-/** 错题详情弹层：完整题面 + 正确项标绿 + 解析 + 当前计数（只读态，方案 A） */
+/** 错题详情弹层：完整题面 + 全部正确项标绿（multi 多元素）+ 解析 + 当前计数（只读态，方案 A） */
 @Composable
 private fun WrongDetailDialog(detail: WrongDetailUi, onEvent: (WrongListEvent) -> Unit) {
     val colors = dbColors()
@@ -139,7 +139,7 @@ private fun WrongDetailDialog(detail: WrongDetailUi, onEvent: (WrongListEvent) -
             OptionRow(
                 label = ('A' + index).toString(),
                 text = option,
-                state = if (index == detail.correctIndex) OptionState.GOOD else OptionState.DISABLED,
+                state = if (index in detail.correctIndices) OptionState.GOOD else OptionState.DISABLED,
             )
             Spacer(Modifier.height(8.dp))
         }

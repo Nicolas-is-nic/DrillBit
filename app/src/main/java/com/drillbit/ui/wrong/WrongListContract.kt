@@ -3,6 +3,7 @@ package com.drillbit.ui.wrong
 /*
  * 契约来源：agent_docs/双模型分工开发方案.md 第 7.5 节（逐字复制，禁止改动字段名、类型与顺序）。
  * 2026-09-29 拍板方案 A 后补充 WrongDetailUi / detailDialog / DetailDismiss（文档已同步）。
+ * 2026-09-30 多选/判断题型支持：correctIndex 改 correctIndices（文档已同步）。
  */
 
 data class WrongItem(
@@ -16,7 +17,7 @@ data class WrongItem(
 data class WrongDetailUi(
     val stem: String,                // 完整题干
     val options: List<String>,       // 全部选项
-    val correctIndex: Int,           // 正确项下标（弹层内正确项标 ok 色）
+    val correctIndices: List<Int>,  // 正确项下标（弹层内全部正确项标 ok 色，multi 多元素）
     val explanation: String,
     val countText: String            // 当前重考计数，弹层头部展示
 )

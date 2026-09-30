@@ -92,11 +92,17 @@ class ChatViewModel(private val questionId: String) : ViewModel() {
         val userMessage = buildString {
             if (q != null) {
                 val options = parseOptions(q.optionsJson)
-                val answerIdx = parseAnswers(q.answersJson).firstOrNull() ?: 0
+                val answers = parseAnswers(q.answersJson).distinct().filter { it in options.indices }
+                // 判断题用选项文本更自然（如「对」）；其余题型用字母拼接（如「ACD」）
+                val answerText = if (q.type == "judge") {
+                    answers.joinToString("、") { options[it] }
+                } else {
+                    answers.joinToString("") { ('A' + it).toString() }
+                }
                 append("我在刷一道选择题，请帮我理解：\n")
                 append("题干：").append(q.stem).append('\n')
                 options.forEachIndexed { i, opt -> append('A' + i).append("．").append(opt).append('\n') }
-                append("正确答案：").append('A' + answerIdx).append('\n')
+                append("正确答案：").append(answerText).append('\n')
                 append("参考解析：").append(q.explanation).append("\n\n")
             }
             append("我的问题：").append(text)

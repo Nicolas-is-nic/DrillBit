@@ -37,8 +37,9 @@ class QuizViewModel(private val mode: QuizMode, private val bankId: String) : Vi
             correctCount = 0,
             progress = 0f,
             phase = QuizPhase.ANSWERING,
-            question = QuestionUi(stem = "", options = emptyList(), sourceBankName = null),
+            question = QuestionUi(stem = "", options = emptyList(), type = QuestionType.SINGLE, sourceBankName = null),
             answered = null,
+            selectedIndices = emptyList(),
             finished = false,
         ),
     )
@@ -66,7 +67,8 @@ class QuizViewModel(private val mode: QuizMode, private val bankId: String) : Vi
 
     fun onEvent(event: QuizEvent) {
         when (event) {
-            is QuizEvent.OptionClick -> answer(event.index)
+            is QuizEvent.OptionClick -> onOptionClick(event.index)
+            QuizEvent.ConfirmClick -> confirmAnswer()
             QuizEvent.Next -> next()
             else -> Unit // AskAi / Back 由导航层处理
         }
@@ -75,13 +77,42 @@ class QuizViewModel(private val mode: QuizMode, private val bankId: String) : Vi
     /** 当前题的实体 id（AskAi 跳问答带上下文用） */
     fun currentQuestionId(): String = session?.questions?.getOrNull(cursor)?.entity?.id.orEmpty()
 
-    private fun answer(selectedIndex: Int) {
+    /** 题库 type 字符串映射契约枚举（7.4），未识别值按 SINGLE */
+    private fun mapType(type: String): QuestionType = when (type) {
+        "multi" -> QuestionType.MULTI
+        "judge" -> QuestionType.JUDGE
+        else -> QuestionType.SINGLE
+    }
+
+    /** 选项点击：切换答前已选，不立即判定。multi 点已选取消/未选追加；single/judge 点未选替换、点已选取消（契约 7.4） */
+    private fun onOptionClick(index: Int) {
+        val s = session ?: return
+        if (stateFlow.value.phase == QuizPhase.ANSWERED) return
+        val sq = s.questions.getOrNull(cursor) ?: return
+        val current = stateFlow.value.selectedIndices
+        val next = when {
+            index in current -> current - index
+            mapType(sq.entity.type) == QuestionType.MULTI -> current + index
+            else -> listOf(index)
+        }
+        stateFlow.value = stateFlow.value.copy(selectedIndices = next)
+    }
+
+    /** 确认作答（所有题型）：已选项进入判定（空选为按钮禁用的兜底，直接忽略） */
+    private fun confirmAnswer() {
+        if (stateFlow.value.phase == QuizPhase.ANSWERED) return
+        val selected = stateFlow.value.selectedIndices
+        if (selected.isEmpty()) return
+        answer(selected)
+    }
+
+    private fun answer(selectedIndices: List<Int>) {
         val s = session ?: return
         if (stateFlow.value.phase == QuizPhase.ANSWERED) return
         val sq = s.questions.getOrNull(cursor) ?: return
         val q: QuestionEntity = sq.entity
-        val correctIndex = repo.correctIndex(q.optionsJson, q.answersJson)
-        val isCorrect = selectedIndex == correctIndex
+        val correctIndices = repo.correctIndices(q.optionsJson, q.answersJson)
+        val isCorrect = selectedIndices.toSet() == correctIndices.toSet()
         if (isCorrect) correctCount++
 
         viewModelScope.launch {
@@ -108,13 +139,14 @@ class QuizViewModel(private val mode: QuizMode, private val bankId: String) : Vi
             stateFlow.value = stateFlow.value.copy(
                 phase = QuizPhase.ANSWERED,
                 answered = AnsweredUi(
-                    selectedIndex = selectedIndex,
-                    correctIndex = correctIndex,
+                    selectedIndices = selectedIndices,
+                    correctIndices = correctIndices,
                     isCorrect = isCorrect,
                     explanation = q.explanation,
                     wrongBannerText = wrongBanner,
                     countBannerText = countBanner,
                 ),
+                selectedIndices = emptyList(),
             )
         }
     }
@@ -151,9 +183,11 @@ class QuizViewModel(private val mode: QuizMode, private val bankId: String) : Vi
             question = QuestionUi(
                 stem = q.stem,
                 options = parseOptions(q.optionsJson),
+                type = mapType(q.type),
                 sourceBankName = if (mode == QuizMode.MIX) sq.bankName else null,
             ),
             answered = null,
+            selectedIndices = emptyList(),
             finished = false,
         )
     }

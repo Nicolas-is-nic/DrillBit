@@ -67,7 +67,7 @@ class WrongListViewModel : ViewModel() {
                 WrongDetailUi(
                     stem = d.stem,
                     options = d.options,
-                    correctIndex = d.correctIndex,
+                    correctIndices = d.correctIndices,
                     explanation = d.explanation,
                     countText = "${d.retryCount}/3",
                 )

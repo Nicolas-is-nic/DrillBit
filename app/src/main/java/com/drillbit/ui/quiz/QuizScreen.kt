@@ -37,7 +37,7 @@ import com.drillbit.ui.theme.dbColors
 /**
  * P5 / P6 / P7 / P9 刷题页（单库顺序刷、混合卷、错题重考三模式共用）。
  *
- * 答前：选项可点、「下一题」置灰；答后：判定着色的选项 + 解析常驻 + 「下一题」激活。
+ * 答前：点选项切换选中（主色描边）、主按钮「确认作答」（未选置灰）；答后：判定着色 + 解析常驻 + 「下一题」激活。
  */
 @Composable
 fun QuizScreen(state: QuizUiState, onEvent: (QuizEvent) -> Unit) {
@@ -92,11 +92,20 @@ fun QuizScreen(state: QuizUiState, onEvent: (QuizEvent) -> Unit) {
                             type = DBButtonType.GHOST,
                         )
                         Spacer(Modifier.width(10.dp))
+                        val awaitingConfirm = state.phase == QuizPhase.ANSWERING
                         DBButton(
-                            text = "下一题",
-                            onClick = { onEvent(QuizEvent.Next) },
+                            text = if (awaitingConfirm) "确认作答" else "下一题",
+                            onClick = {
+                                if (awaitingConfirm) {
+                                    onEvent(QuizEvent.ConfirmClick)
+                                } else {
+                                    onEvent(QuizEvent.Next)
+                                }
+                            },
                             modifier = Modifier.weight(1f),
-                            type = if (state.phase == QuizPhase.ANSWERED) {
+                            type = if (state.phase == QuizPhase.ANSWERED ||
+                                (awaitingConfirm && state.selectedIndices.isNotEmpty())
+                            ) {
                                 DBButtonType.PRIMARY
                             } else {
                                 DBButtonType.OFF
@@ -163,15 +172,17 @@ private fun QuestionContent(state: QuizUiState, onEvent: (QuizEvent) -> Unit) {
 }
 
 /**
- * 选项状态映射：契约只给出 selectedIndex / correctIndex，页面据此决定着色。
+ * 选项状态映射：页面只按契约字段决定着色，不判定对错。
  *
- * 答后既非选中项也非正确项的选项按 DISABLED 轻微降噪（不可点）。
+ * 答前：multi 已选项 SELECTED，其余 DEFAULT。
+ * 答后：正确项 GOOD 优先，误选项 BAD，其余 DISABLED 轻微降噪（不可点）。
  */
 private fun optionState(state: QuizUiState, index: Int): OptionState {
-    val answered = state.answered ?: return OptionState.DEFAULT
-    return when (index) {
-        answered.correctIndex -> OptionState.GOOD
-        answered.selectedIndex -> OptionState.BAD
+    val answered = state.answered
+        ?: return if (index in state.selectedIndices) OptionState.SELECTED else OptionState.DEFAULT
+    return when {
+        index in answered.correctIndices -> OptionState.GOOD
+        index in answered.selectedIndices -> OptionState.BAD
         else -> OptionState.DISABLED
     }
 }
@@ -212,9 +223,11 @@ private fun previewAnsweringState() = QuizUiState(
     question = QuestionUi(
         stem = "在标准 Transformer 中，自注意力机制的计算复杂度随序列长度 n 如何增长（忽略常数因子）？",
         options = listOf("O(n)", "O(n log n)", "O(n²)", "O(n³)"),
+        type = QuestionType.SINGLE,
         sourceBankName = null,
     ),
     answered = null,
+    selectedIndices = emptyList(),
     finished = false,
 )
 
@@ -222,8 +235,8 @@ private fun previewAnsweringState() = QuizUiState(
 private fun previewAnsweredState() = previewAnsweringState().copy(
     phase = QuizPhase.ANSWERED,
     answered = AnsweredUi(
-        selectedIndex = 1,
-        correctIndex = 2,
+        selectedIndices = listOf(1),
+        correctIndices = listOf(2),
         isCorrect = false,
         explanation = "自注意力要计算 n×n 的注意力分数矩阵 QKᵀ，再与 V 相乘，两项均为 O(n²·d)，" +
             "因此呈平方级增长。这正是长上下文需要稀疏注意力、线性注意力等优化的原因。",
@@ -249,17 +262,19 @@ private fun previewMixState() = QuizUiState(
             "对最终答案做格式校验",
             "触发下一次采样温度调整",
         ),
+        type = QuestionType.SINGLE,
         sourceBankName = "Agent 与工具调用",
     ),
     answered = AnsweredUi(
-        selectedIndex = 1,
-        correctIndex = 1,
+        selectedIndices = listOf(1),
+        correctIndices = listOf(1),
         isCorrect = true,
         explanation = "ReAct 循环为「思考 → 行动 → 观察」，观察即把外部工具的返回结果拼回上下文，" +
             "模型据此修正下一步推理，因此它是工具与推理之间的反馈通道。",
         wrongBannerText = null,
         countBannerText = null,
     ),
+    selectedIndices = emptyList(),
     finished = false,
 )
 
@@ -280,17 +295,19 @@ private fun previewRetryState() = QuizUiState(
             "可以无限扩展上下文长度",
             "训练后不需要推理框架支持",
         ),
+        type = QuestionType.SINGLE,
         sourceBankName = null,
     ),
     answered = AnsweredUi(
-        selectedIndex = 1,
-        correctIndex = 0,
+        selectedIndices = listOf(1),
+        correctIndices = listOf(0),
         isCorrect = false,
         explanation = "LoRA 冻结原权重，只训练注入的低秩矩阵，可训练参数通常降到原模型的千分之一量级，" +
             "因此显存占用与权重存储都大幅下降，但前向与反向仍要经过主干网络。",
         wrongBannerText = "已加入错题集 · 重考计数重置为 3/3",
         countBannerText = "本题重考计数 2/3 · 本次答对后变为 1/3",
     ),
+    selectedIndices = emptyList(),
     finished = false,
 )
 

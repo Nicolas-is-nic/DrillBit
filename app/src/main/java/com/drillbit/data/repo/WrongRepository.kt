@@ -40,7 +40,7 @@ class WrongRepository(private val db: DrillBitDatabase) {
     data class WrongDetail(
         val stem: String,
         val options: List<String>,
-        val correctIndex: Int,
+        val correctIndices: List<Int>,
         val explanation: String,
         val retryCount: Int,
     )
@@ -52,8 +52,9 @@ class WrongRepository(private val db: DrillBitDatabase) {
         WrongDetail(
             stem = q.stem,
             options = options,
-            correctIndex = com.drillbit.data.parseAnswers(q.answersJson)
-                .firstOrNull()?.coerceIn(0, options.lastIndex.coerceAtLeast(0)) ?: 0,
+            correctIndices = com.drillbit.data.parseAnswers(q.answersJson)
+                .filter { it in options.indices }
+                .distinct(),
             explanation = q.explanation,
             retryCount = wrong.retryCount,
         )

@@ -1,6 +1,7 @@
 # DrillBit 项目知识库
 
 **生成日期**: 2026-09-29
+**最近更新**: 2026-09-30（多选/判断题型上线，统一确认作答交互，v0.1.0(18)）
 
 ## 概览
 
@@ -8,7 +9,7 @@
 
 - 用途：碎片化时间刷选择题强化记忆（背景：用户转行大模型 Agent 方向，非科班）
 - 形态：安卓 App（主体）+ 个人服务器 Python 后端（题库分发、笔记备份）
-- 状态：开发全部完成（阶段 0 骨架 / 阶段 1 UI 层 / 阶段 2 数据层与业务接线，T1-T7），v0.1.0(8) 已出包；后端已部署上线；当前在真机联调验收期
+- 状态：开发全部完成（阶段 0 骨架 / 阶段 1 UI 层 / 阶段 2 数据层与业务接线，T1-T7），v0.1.0(18) 已出包；后端已部署上线；多选/判断题型已上线，真机验收中
 - 定位：自用，无上架/账号体系/统计图表/云同步/复习算法（红线，见 spec 2.1 非目标）
 
 ## 技术栈（已决策，2026-09-29）
@@ -23,7 +24,7 @@
 
 需新增 Gradle 依赖（无系统级环境安装）：HTTP 客户端（题库拉取、大模型 API、笔记上传）、JSON 解析库。无音频需求，不引 Media3。
 
-**后端**：Python FastAPI 单文件（`server/main.py`），已部署到用户个人服务器（systemd + https 反代 + token 鉴权），部署细节见 `agent_docs/DrillBit服务器部署指南.md`。
+**后端**：Python FastAPI 单文件（`server/main.py`），已部署到用户个人服务器（start.sh 常驻非 systemd + https 反代 + token 鉴权；实际部署目录与启动方式以 `agent_docs/DrillBit服务器部署指南.md` 顶部核实说明为准）。
 
 ## 目录结构
 
@@ -32,6 +33,8 @@
 - `server/main.py` + `server/banks/`: 后端服务与题库文件目录（部署在服务器，仓库内存源码）
 - `agent_docs/DrillBit服务器部署指南.md`: 服务器部署/运维指南（题库更新流程、token 轮换、排障）
 - `app/src/main/assets/test_banks.json`: 本地测试题库（未配置服务器时点同步即导入，开发期路径）
+- `agent_docs/题库JSON格式规范.md`: 题库 JSON 出品规范（三题型示例、校验规则、自检清单，可整份喂给出题大模型）
+- `agent_docs/题库更新操作手册.md`: 服务器题库日常更新 runbook（ssh/scp 流程、三场景、排障，含实际连接与路径）
 - `agent_docs/双模型分工开发方案.md`: 双模型协作唯一契约源（路由/色值/组件/UiState/Event，阶段 1 交付物）
 - `agent_docs/页面设计完整方案.html`: 视觉唯一基准（22 屏，已按阶段 1 实现回写定稿）
 - `agent_docs/阶段1-UI交接说明与遗留问题.md`: UI 模型交接文档（契约缺口、工程坑、阶段 2 接线清单）
@@ -80,10 +83,10 @@ Mac 构建 → Finder 打开产物 → 微信/隔空投送传手机 → 卓易�
 
 - 已完成：需求澄清、系统设计（spec 1-5 章）、页面设计、阶段 0 骨架、阶段 1 UI 层、阶段 2 数据层（Room/DataStore/网络/流式 AI/笔记/备份）已 push；其后一真机联调修复批次（见下条）
 - 后端：FastAPI 已部署上线（题库分发 + 笔记备份 + token 鉴权 + https）
-- 当前：真机联调修复批次已落地（v0.1.0(10)）：题库导入外键回滚修复（事务内先插 bank 行再插 questions，否则全新库必失败）、刷完一轮断点归零重开、从头重刷等落库后再跳转、同步/更新失败上浮提示条（契约 7.1 加 banner 字段）、深色冷启动白闪修复（values-night 双套 windowBackground + 根部全屏底色）、服务器配置保存反馈、LlmClient 加 User-Agent 与 opencode.ai 会话头、应用图标换题卡造型
+- 当前：多选/判断题型批次已落地（v0.1.0(17)→(18)）：契约 7.4/7.5 扩展（AnsweredUi 单选 Int 改 List、新增 QuestionType、QuizUiState 增 selectedIndices、QuizEvent 增 ConfirmClick、OptionRow 增 SELECTED 态）；所有题型统一「确认作答」交互（single/judge 点选不再立即判定，避免误触）；多选全对才算对；AI 上下文多答案拼接；错题弹层多正确项标绿；本地与服务器的 mini 测试库均推到 version 2（各含 1 multi + 1 judge）。更早的真机联调修复批次（v0.1.0(10)）见 git 历史
 - 日常维护仅三件事：服务器上改题库 JSON（version+1 即生效）、App 内同步、出题攒笔记
 - keystore 与 keystore.properties 不入 git（用户自行备份），丢失 = 无法覆盖升级
-- 后续迭代：多选题型（schema 已预留）、笔记搜索（触发条件见 spec 2.1）、流式以外的体验优化按需推进
+- 后续迭代：笔记搜索（触发条件见 spec 2.1）、判断题双列大按钮渲染（现复用单选纵向，已拍板后议）、流式以外的体验优化按需推进
 - 双模型协作机制：UI 模型只写 ui/ 层照契约实现；coding 模型实现契约另一侧（ViewModel 产 state 消费 event）；契约变更必须先改分工文档再改代码
 - 出包纪律：每次改动 versionCode+1，装机后先核对设置页版本号再验收
-- 真机联调遗留：崩溃/异常现象优先查 crash_last.txt 弹窗与设置页「崩溃日志」入口；修复后 versionCode 递增（当前 10）
+- 真机联调遗留：崩溃/异常现象优先查 crash_last.txt 弹窗与设置页「崩溃日志」入口；修复后 versionCode 递增（当前 18）

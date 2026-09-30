@@ -105,9 +105,11 @@ class QuizRepository(private val db: DrillBitDatabase) {
             "${updated.retryCount}/3"
         }
 
-    /** 读题目的正确下标（单选取首个） */
-    fun correctIndex(optionsJson: String, answersJson: String): Int {
+    /** 读题目的全部正确下标（multi 多元素，single/judge 单元素；过滤越界与重复） */
+    fun correctIndices(optionsJson: String, answersJson: String): List<Int> {
         val optionsCount = com.drillbit.data.parseOptions(optionsJson).size
-        return parseAnswers(answersJson).firstOrNull()?.coerceIn(0, optionsCount - 1) ?: 0
+        return parseAnswers(answersJson)
+            .filter { it in 0 until optionsCount }
+            .distinct()
     }
 }
