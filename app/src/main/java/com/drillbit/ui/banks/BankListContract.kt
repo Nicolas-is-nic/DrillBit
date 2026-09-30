@@ -1,5 +1,7 @@
 package com.drillbit.ui.banks
 
+import com.drillbit.ui.components.BannerUi
+
 /*
  * 契约来源：agent_docs/双模型分工开发方案.md 第 7.1 节（逐字复制，禁止改动字段名、类型与顺序）。
  */
@@ -24,7 +26,8 @@ data class BankListUiState(
     val banks: List<BankCard>,
     val syncing: Boolean,
     val lastSyncText: String,        // 如「服务器已连接 · 上次同步 今天 08:20」
-    val updateDialog: UpdateDialogState?   // 非空时展示 P3 更新弹窗
+    val updateDialog: UpdateDialogState?,  // 非空时展示 P3 更新弹窗
+    val banner: BannerUi?            // 同步/更新失败的可读错误（非空时展示提示条）
 )
 
 sealed interface BankListEvent {

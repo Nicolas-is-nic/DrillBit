@@ -57,7 +57,6 @@ class BankDetailViewModel(private val bankId: String) : ViewModel() {
 
     fun onEvent(event: BankDetailEvent) {
         when (event) {
-            BankDetailEvent.RestartClick -> resetProgress()
             BankDetailEvent.DeleteClick -> deleteConfirmVisible.value = true
             BankDetailEvent.DeleteCancel -> deleteConfirmVisible.value = false
             BankDetailEvent.DeleteConfirm -> deleteBank()
@@ -65,9 +64,9 @@ class BankDetailViewModel(private val bankId: String) : ViewModel() {
         }
     }
 
-    /** 从头重刷：断点清零（已刷进度重置，错题不受影响） */
-    private fun resetProgress() {
-        viewModelScope.launch { repo.resetProgress(bankId) }
+    /** 从头重刷：断点清零（已刷进度重置，错题不受影响）；suspend 供导航层等落库后再跳转 */
+    suspend fun restart() {
+        repo.resetProgress(bankId)
     }
 
     private fun deleteBank() {

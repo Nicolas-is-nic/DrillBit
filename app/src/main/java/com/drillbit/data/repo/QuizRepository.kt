@@ -21,7 +21,12 @@ class QuizRepository(private val db: DrillBitDatabase) {
         val bank = db.bankDao().getById(bankId) ?: return@withContext null
         val questions = db.questionDao().getByBank(bankId)
         if (questions.isEmpty()) return@withContext null
-        val progress = db.progressDao().get(bankId)
+        var progress = db.progressDao().get(bankId)
+        // 已刷完一轮（nextIndex 到达题数）：断点归零从头开新轮，否则重进只剩最后一题，答完即“结束”
+        if (progress != null && progress.nextIndex >= questions.size) {
+            db.progressDao().deleteByBank(bankId)
+            progress = null
+        }
         QuizSession(
             mode = QuizMode.SINGLE,
             title = bank.name,

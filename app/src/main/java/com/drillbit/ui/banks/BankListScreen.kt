@@ -23,6 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.drillbit.ui.components.DBCard
+import com.drillbit.ui.components.Banner
 import com.drillbit.ui.components.DBButton
 import com.drillbit.ui.components.DBButtonType
 import com.drillbit.ui.components.DBProgressBar
@@ -63,6 +64,13 @@ fun BankListScreen(state: BankListUiState, onEvent: (BankListEvent) -> Unit) {
                     color = colors.text2,
                     modifier = Modifier.padding(bottom = 10.dp),
                 )
+                state.banner?.let { b ->
+                    Banner(
+                        text = b.text,
+                        type = b.type,
+                        modifier = Modifier.padding(bottom = 10.dp),
+                    )
+                }
                 state.banks.forEach { bank ->
                     BankListRow(
                         bank = bank,
@@ -200,6 +208,7 @@ private fun previewState() = BankListUiState(
     syncing = false,
     lastSyncText = "服务器已连接 · 上次同步 今天 08:20",
     updateDialog = null,
+    banner = null,
 )
 
 /** 预览假数据：更新弹窗展开 */

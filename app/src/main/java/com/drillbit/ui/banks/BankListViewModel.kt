@@ -3,7 +3,9 @@ package com.drillbit.ui.banks
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.drillbit.ServiceLocator
+import com.drillbit.ui.components.BannerType
 import com.drillbit.data.BankIndexItem
+import com.drillbit.ui.components.BannerUi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -30,9 +32,12 @@ class BankListViewModel : ViewModel() {
     /** 更新弹窗内容（非空即展示） */
     private val updateDialog = MutableStateFlow<UpdateDialogState?>(null)
 
+    /** 同步/更新结果提示（成功与失败都上浮，非空展示提示条） */
+    private val banner = MutableStateFlow<BannerUi?>(null)
+
     /** 服务器目录全量（弹窗列出「无变化」项用） */
 
-    val state: StateFlow<BankListUiState> = combine(
+    private val baseState = combine(
         repo.observeBanks(),
         repo.observeProgress(),
         syncing,
@@ -55,7 +60,12 @@ class BankListViewModel : ViewModel() {
             syncing = syncingNow,
             lastSyncText = if (last > 0) "上次同步 ${TimeFmt.medium(last)}" else "尚未同步",
             updateDialog = dialog,
+            banner = null,
         )
+    }
+
+    val state: StateFlow<BankListUiState> = combine(baseState, banner) { s, b ->
+        s.copy(banner = b)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
@@ -64,6 +74,7 @@ class BankListViewModel : ViewModel() {
             syncing = false,
             lastSyncText = "尚未同步",
             updateDialog = null,
+            banner = null,
         ),
     )
 
@@ -84,6 +95,7 @@ class BankListViewModel : ViewModel() {
         if (syncing.value) return
         viewModelScope.launch {
             syncing.value = true
+            banner.value = null
             val settings = ServiceLocator.settingsStore.snapshot()
             if (settings.serverUrl.isBlank()) {
                 runCatching { repo.importTestBanks(ServiceLocator.appContext()) }
@@ -96,7 +108,13 @@ class BankListViewModel : ViewModel() {
                     }
             } else {
                 runCatching { prepareUpdateDialog(settings) }
-                    .onFailure { /* 网络错误时弹窗不放，状态行由数据刷新体现 */ }
+                    .onFailure { e ->
+                        // 网络失败要给用户可读反馈，不能静默吞掉
+                        banner.value = BannerUi(
+                            "同步失败：" + BankRepository.readableError(e as? Exception ?: RuntimeException(e)),
+                            BannerType.WARN,
+                        )
+                    }
             }
             syncing.value = false
         }
@@ -133,6 +151,7 @@ class BankListViewModel : ViewModel() {
 
     /** 确认更新：逐库事务替换 */
     private fun confirmUpdate() {
+        if (syncing.value) return
         val targets = pendingUpdates.value.keys.toList()
         if (targets.isEmpty()) {
             updateDialog.value = null
@@ -152,6 +171,11 @@ class BankListViewModel : ViewModel() {
             if (failed == null) {
                 pendingUpdates.value = emptyMap()
                 updateDialog.value = null
+                banner.value = BannerUi("更新完成", BannerType.OK)
+            } else {
+                // 失败也要关弹窗并上浮错误，否则用户看不到任何反应
+                updateDialog.value = null
+                banner.value = BannerUi("更新失败：$failed", BannerType.WARN)
             }
             syncing.value = false
         }

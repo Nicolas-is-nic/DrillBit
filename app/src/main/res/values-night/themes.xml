@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Compose 负责实际配色，这里只做启动窗口主题；深浅两套 windowBackground 防止未绘制区域露白 -->
+    <!-- 深色模式变体：windowBackground 用深色底，避免边缘与冷启动白闪（Color.kt DarkDbColors.bg 同值） -->
     <style name="Theme.DrillBit" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:windowBackground">@color/window_bg</item>
         <item name="android:navigationBarColor">@color/window_bg</item>

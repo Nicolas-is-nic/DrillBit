@@ -88,6 +88,9 @@ class ServerConfigViewModel : ViewModel() {
         viewModelScope.launch {
             val current = stateFlow.value
             ServiceLocator.settingsStore.setServer(current.url, current.token)
+            stateFlow.value = stateFlow.value.copy(
+                testResult = BannerUi("已保存", BannerType.OK),
+            )
         }
     }
 }

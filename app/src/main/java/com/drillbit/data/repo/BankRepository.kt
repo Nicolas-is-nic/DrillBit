@@ -99,6 +99,17 @@ class BankRepository(
     /** 事务内全量替换一个题库（下载路径与导入路径共用） */
     private suspend fun replaceInTransaction(payload: BankPayload) {
         db.withTransaction {
+            // 先写题库行：questions 有外键指向 banks，全新库先插题目会触发外键约束回滚
+            db.bankDao().upsert(
+                BankEntity(
+                    id = payload.id,
+                    name = payload.name,
+                    version = payload.version,
+                    updatedAt = payload.updatedAt,
+                    questionCount = payload.questions.size,
+                    lastSyncAt = System.currentTimeMillis(),
+                ),
+            )
             db.questionDao().deleteByBank(payload.id)
             db.questionDao().insertAll(
                 payload.questions.mapIndexed { index, q ->
@@ -114,16 +125,6 @@ class BankRepository(
                         weight = q.weight,
                     )
                 },
-            )
-            db.bankDao().upsert(
-                BankEntity(
-                    id = payload.id,
-                    name = payload.name,
-                    version = payload.version,
-                    updatedAt = payload.updatedAt,
-                    questionCount = payload.questions.size,
-                    lastSyncAt = System.currentTimeMillis(),
-                ),
             )
             // 已拍板：题库更新后断点直接重置，从头刷
             db.progressDao().deleteByBank(payload.id)

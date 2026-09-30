@@ -4,6 +4,9 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -110,6 +113,9 @@ class MainActivity : ComponentActivity() {
             var crashVisible by remember { mutableStateOf(!crashText.isNullOrBlank()) }
             val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
             DrillBitTheme(darkTheme = darkTheme) {
+            val bgColor = dbColors().bg
+            // 根部全屏底色：画满整屏（含系统栏区域），杜绝 App 内切深色后边缘露白
+            Box(Modifier.fillMaxSize().background(bgColor)) {
                 DrillBitApp(
                     darkTheme = darkTheme,
                     onDarkModeChange = onDarkModeChange,
@@ -130,6 +136,7 @@ class MainActivity : ComponentActivity() {
                     )
                 }
             }
+        }
         }
     }
 }
@@ -250,14 +257,17 @@ fun DrillBitApp(
                     factory = BankDetailViewModel.Factory(bankId),
                 )
                 val state by vm.state.collectAsState()
+                val scope = rememberCoroutineScope()
                 BankDetailScreen(
                     state = state,
                     onEvent = { event ->
                         when (event) {
-                            BankDetailEvent.ContinueClick,
-                            BankDetailEvent.RestartClick,
-                            -> {
-                                vm.onEvent(event)
+                            BankDetailEvent.ContinueClick ->
+                                navController.navigate("quiz?mode=single&bankId=$bankId")
+
+                            BankDetailEvent.RestartClick -> scope.launch {
+                                // 从头重刷：等断点清零落库后再进刷题页，避免读到旧断点只剩末题
+                                vm.restart()
                                 navController.navigate("quiz?mode=single&bankId=$bankId")
                             }
 

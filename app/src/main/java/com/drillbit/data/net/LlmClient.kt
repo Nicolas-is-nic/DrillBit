@@ -1,6 +1,7 @@
 package com.drillbit.data.net
 
 import com.drillbit.data.DbSettings
+import com.drillbit.BuildConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.Flow
@@ -14,6 +15,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.io.IOException
 import java.util.concurrent.TimeUnit
+import java.util.UUID
 
 /**
  * 大模型客户端（spec 4.2.1，SSE 流式）：
@@ -27,6 +29,9 @@ class LlmClient {
         // 流式响应整体读取放宽到 5 分钟（长回答）
         .readTimeout(300, TimeUnit.SECONDS)
         .build()
+
+    /** opencode go 要求的稳定会话标识：进程内固定（本类为单例），进程重启换新 */
+    private val sessionId: String = UUID.randomUUID().toString()
 
     /**
      * 流式对话：返回增量文本 Flow；Flow 正常结束=回复完成，抛异常=失败/中断。
@@ -69,6 +74,11 @@ class LlmClient {
                     builder.header("anthropic-version", "2023-06-01")
                 } else {
                     builder.header("Authorization", "Bearer ${settings.llmKey}")
+                }
+                // opencode go 要求自有 UA 与稳定会话头；会话头仅对该域名发送，其他服务商不加
+                builder.header("User-Agent", "DrillBit/${BuildConfig.VERSION_NAME}")
+                if (trimUrl(settings.llmUrl).contains("opencode.ai")) {
+                    builder.header("x-opencode-session", sessionId)
                 }
                 client.newCall(builder.build()).execute().use { resp ->
                     if (!resp.isSuccessful) {
@@ -123,6 +133,10 @@ class LlmClient {
             builder.header("anthropic-version", "2023-06-01")
         } else {
             builder.header("Authorization", "Bearer ${settings.llmKey}")
+        }
+        builder.header("User-Agent", "DrillBit/${BuildConfig.VERSION_NAME}")
+        if (trimUrl(settings.llmUrl).contains("opencode.ai")) {
+            builder.header("x-opencode-session", sessionId)
         }
         client.newCall(builder.build()).execute().use { resp ->
             val respBody = resp.body?.string().orEmpty()
