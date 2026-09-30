@@ -81,16 +81,23 @@ class ModelConfigViewModel : ViewModel() {
     private fun save() {
         viewModelScope.launch {
             val current = stateFlow.value
-            ServiceLocator.settingsStore.setLlm(
-                url = current.url,
-                key = current.apiKey,
-                model = current.modelName,
-                type = if (current.apiType == ApiType.ANTHROPIC) "anthropic" else "openai",
-            )
-            // 保存后给可见反馈（真机问题 1：原先落库成功但界面无任何反应）
-            stateFlow.value = stateFlow.value.copy(
-                testResult = BannerUi("已保存", BannerType.OK),
-            )
+            // 防护写失败（磁盘满/DataStore 损坏）：与 test() 对称，无 adb 环境崩溃代价高（review M-2）
+            runCatching {
+                ServiceLocator.settingsStore.setLlm(
+                    url = current.url,
+                    key = current.apiKey,
+                    model = current.modelName,
+                    type = if (current.apiType == ApiType.ANTHROPIC) "anthropic" else "openai",
+                )
+            }.onSuccess {
+                stateFlow.value = stateFlow.value.copy(
+                    testResult = BannerUi("已保存", BannerType.OK),
+                )
+            }.onFailure { e ->
+                stateFlow.value = stateFlow.value.copy(
+                    testResult = BannerUi("保存失败：${e.message ?: "未知错误"}", BannerType.WARN),
+                )
+            }
         }
     }
 }

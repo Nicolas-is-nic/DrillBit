@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -36,6 +37,8 @@ fun ScrimModal(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            // 键盘弹出时整体上避，防止悬浮键盘盖住弹窗底部按钮（review m-1）
+            .imePadding()
             .background(colors.scrim)
             .padding(horizontal = 20.dp),
         contentAlignment = Alignment.Center,

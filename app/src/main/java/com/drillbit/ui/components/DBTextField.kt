@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -109,7 +111,16 @@ fun DBTextField(
                     } else {
                         VisualTransformation.None
                     },
-                    modifier = Modifier.fillMaxWidth(),
+                    // BasicTextField 无内置滚动：多行限高时手动加，否则长文本下半段不可见（review M-1）
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .then(
+                            if (!singleLine && maxHeight > 0.dp) {
+                                Modifier.verticalScroll(rememberScrollState())
+                            } else {
+                                Modifier
+                            },
+                        ),
                 )
             }
             if (password) {
