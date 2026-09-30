@@ -16,6 +16,10 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -26,6 +30,7 @@ import com.drillbit.ui.components.DBCard
 import com.drillbit.ui.components.DBButton
 import com.drillbit.ui.components.DBButtonType
 import com.drillbit.ui.components.DbTopBar
+import com.drillbit.ui.components.ScrimModal
 import com.drillbit.ui.theme.DrillBitTheme
 import com.drillbit.ui.theme.dbColors
 
@@ -33,6 +38,8 @@ import com.drillbit.ui.theme.dbColors
 @Composable
 fun DigestScreen(state: DigestUiState, onEvent: (DigestEvent) -> Unit) {
     val colors = dbColors()
+    // 查看全文弹窗为页面内本地状态，不进契约（事件语义已在页面内消化）
+    var showFull by remember { mutableStateOf(false) }
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
             DbTopBar(
@@ -103,8 +110,31 @@ fun DigestScreen(state: DigestUiState, onEvent: (DigestEvent) -> Unit) {
                 Spacer(Modifier.width(10.dp))
                 DBButton(
                     text = "查看全文",
-                    onClick = { onEvent(DigestEvent.ViewFull) },
+                    onClick = { showFull = true },
                     modifier = Modifier.weight(1f),
+                )
+            }
+        }
+        if (showFull) {
+            ScrimModal {
+                Text(
+                    text = "归纳稿全文",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = colors.text,
+                )
+                Spacer(Modifier.height(8.dp))
+                com.mikepenz.markdown.m3.Markdown(
+                    content = state.sections.joinToString("\n\n") { it.title + "\n" + it.body }
+                        .replace(Regex("\\n{3,}"), "\\n\\n"),
+                    typography = com.mikepenz.markdown.m3.markdownTypography(
+                        text = MaterialTheme.typography.bodyMedium.copy(lineHeight = 21.sp),
+                    ),
+                )
+                Spacer(Modifier.height(12.dp))
+                DBButton(
+                    text = "关闭",
+                    onClick = { showFull = false },
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
         }

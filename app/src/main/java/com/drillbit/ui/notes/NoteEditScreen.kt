@@ -18,30 +18,47 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.drillbit.ui.components.DBButton
 import com.drillbit.ui.components.DBButtonType
 import com.drillbit.ui.components.DBTextField
 import com.drillbit.ui.components.DbTopBar
+import com.drillbit.ui.components.DbTopBarAction
 import com.drillbit.ui.components.DbTopBarInfo
 import com.drillbit.ui.components.ScrimModal
 import com.drillbit.ui.theme.DrillBitTheme
 import com.drillbit.ui.theme.dbColors
+import com.mikepenz.markdown.m3.Markdown
+import com.mikepenz.markdown.m3.markdownTypography
 
 /** P13 笔记详情 / 编辑：标题与正文可改，保留来源题目跳转与删除入口 */
 @Composable
 fun NoteEditScreen(state: NoteEditUiState, onEvent: (NoteEditEvent) -> Unit) {
     val colors = dbColors()
+    // 查看/编辑双态：已有笔记默认查看态（正文 Markdown 渲染），新建直接进编辑态；
+    // 切换为页面内本地状态，不进契约（同保存弹窗本地编辑的先例）
+    var editing by remember(state.noteId) { mutableStateOf(state.noteId == "new") }
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
             DbTopBar(
                 title = "笔记",
                 onBack = { onEvent(NoteEditEvent.Back) },
-                actions = { DbTopBarInfo(text = "编辑") },
+                actions = {
+                    if (editing) {
+                        DbTopBarAction(text = "完成", onClick = { editing = false })
+                    } else {
+                        DbTopBarAction(text = "编辑", onClick = { editing = true })
+                    }
+                },
             )
             Column(
                 modifier = Modifier
@@ -50,19 +67,35 @@ fun NoteEditScreen(state: NoteEditUiState, onEvent: (NoteEditEvent) -> Unit) {
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 14.dp),
             ) {
-                DBTextField(
-                    label = "标题",
-                    value = state.title,
-                    onChange = { text -> onEvent(NoteEditEvent.TitleChange(text)) },
-                )
-                Spacer(Modifier.height(11.dp))
-                DBTextField(
-                    label = "正文",
-                    value = state.content,
-                    onChange = { text -> onEvent(NoteEditEvent.ContentChange(text)) },
-                    singleLine = false,
-                    minHeight = 150.dp,
-                )
+                if (editing) {
+                    DBTextField(
+                        label = "标题",
+                        value = state.title,
+                        onChange = { text -> onEvent(NoteEditEvent.TitleChange(text)) },
+                    )
+                    Spacer(Modifier.height(11.dp))
+                    DBTextField(
+                        label = "正文",
+                        value = state.content,
+                        onChange = { text -> onEvent(NoteEditEvent.ContentChange(text)) },
+                        singleLine = false,
+                        minHeight = 150.dp,
+                    )
+                } else {
+                    // 查看态：正文为模型/手写的 Markdown，富渲染呈现
+                    Text(
+                        text = state.title.ifBlank { "无标题笔记" },
+                        style = MaterialTheme.typography.titleMedium,
+                        color = colors.text,
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    Markdown(
+                        content = state.content.ifBlank { "（空）" }.replace(Regex("\\n{3,}"), "\\n\\n"),
+                        typography = markdownTypography(
+                            text = MaterialTheme.typography.bodyMedium.copy(lineHeight = 21.sp),
+                        ),
+                    )
+                }
                 Spacer(Modifier.height(8.dp))
                 state.sourceQuestionText?.let { source ->
                     Row(
@@ -103,24 +136,29 @@ fun NoteEditScreen(state: NoteEditUiState, onEvent: (NoteEditEvent) -> Unit) {
                 )
                 Spacer(Modifier.height(16.dp))
             }
-            HorizontalDivider(thickness = 1.dp, color = colors.line)
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 14.dp, end = 14.dp, top = 10.dp, bottom = 16.dp),
-            ) {
-                DBButton(
-                    text = "取消",
-                    onClick = { onEvent(NoteEditEvent.Back) },
-                    modifier = Modifier.weight(1f),
-                    type = DBButtonType.GHOST,
-                )
-                Spacer(Modifier.width(9.dp))
-                DBButton(
-                    text = "保存修改",
-                    onClick = { onEvent(NoteEditEvent.Save) },
-                    modifier = Modifier.weight(1f),
-                )
+            if (editing) {
+                HorizontalDivider(thickness = 1.dp, color = colors.line)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 14.dp, end = 14.dp, top = 10.dp, bottom = 16.dp),
+                ) {
+                    DBButton(
+                        text = "取消",
+                        onClick = { editing = false },
+                        modifier = Modifier.weight(1f),
+                        type = DBButtonType.GHOST,
+                    )
+                    Spacer(Modifier.width(9.dp))
+                    DBButton(
+                        text = "保存修改",
+                        onClick = {
+                            onEvent(NoteEditEvent.Save)
+                            editing = false
+                        },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
             }
         }
         if (state.deleteConfirmVisible) {
