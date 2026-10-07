@@ -4,6 +4,7 @@ package com.drillbit.ui.wrong
  * 契约来源：agent_docs/双模型分工开发方案.md 第 7.5 节（逐字复制，禁止改动字段名、类型与顺序）。
  * 2026-09-29 拍板方案 A 后补充 WrongDetailUi / detailDialog / DetailDismiss（文档已同步）。
  * 2026-09-30 多选/判断题型支持：correctIndex 改 correctIndices（文档已同步）。
+ * 2026-10-06 F2：增 FavoriteEntryClick（页顶收藏入口卡，文档已同步）。
  */
 
 data class WrongItem(
@@ -31,5 +32,6 @@ data class WrongListUiState(
 sealed interface WrongListEvent {
     data class ItemClick(val questionId: String) : WrongListEvent   // 查库填充 detailDialog
     data object DetailDismiss : WrongListEvent                      // 关闭详情弹层
+    data object FavoriteEntryClick : WrongListEvent               // 页顶「我的收藏」入口卡，导航层处理
     data object RetryAll : WrongListEvent
 }

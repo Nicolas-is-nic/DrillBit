@@ -88,5 +88,5 @@ Mac 构建 → Finder 打开产物 → 微信/隔空投送传手机 → 卓易�
 - keystore 与 keystore.properties 不入 git（用户自行备份），丢失 = 无法覆盖升级
 - 后续迭代：笔记搜索（触发条件见 spec 2.1）、判断题双列大按钮渲染（现复用单选纵向，已拍板后议）、流式以外的体验优化按需推进
 - 双模型协作机制：UI 模型只写 ui/ 层照契约实现；coding 模型实现契约另一侧（ViewModel 产 state 消费 event）；契约变更必须先改分工文档再改代码
-- 出包纪律：每次改动 versionCode+1，装机后先核对设置页版本号再验收
-- 真机联调遗留：崩溃/异常现象优先查 crash_last.txt 弹窗与设置页「崩溃日志」入口；修复后 versionCode 递增（当前 18）
+- 出包纪律：每次改动 versionCode+1，装机后先核对设置页版本号再验收；**iOS 版（独立仓库 ~/pycharm-workspace/DrillBit-iOS，SwiftUI 原生重写，方案见 agent_docs/iOS迁移完整方案.md）版本号与安卓完全对齐**：Marketing Version=versionName、Build=versionCode，安卓为基准源，基准以 app/build.gradle.kts 代码为准
+- 真机联调遗留：崩溃/异常现象优先查 crash_last.txt 弹窗与设置页「崩溃日志」入口；修复后 versionCode 递增（当前 23）

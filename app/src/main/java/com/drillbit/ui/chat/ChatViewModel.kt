@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.drillbit.ServiceLocator
 import com.drillbit.data.db.QuestionEntity
+import com.drillbit.data.net.LlmMessage
 import com.drillbit.data.parseAnswers
 import com.drillbit.data.parseOptions
 import com.drillbit.data.repo.NoteRepository
@@ -18,9 +19,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 /**
- * AI 问答 ViewModel（spec 4.2.1 流式）：
- * 从题目进入时自动携带题干/选项/解析上下文；回答流式增量渲染；
- * 中断保留已收内容；一键保存到笔记。
+ * AI 问答 ViewModel（spec 4.2.1 流式、4.3.4 多轮）：
+ * 题目上下文放入 system；请求携带最近若干轮已完成对话；回答流式增量渲染；
+ * 中断保留已收内容；每条 AI 回复可保存到笔记（按消息 id 定位）。
  */
 class ChatViewModel(private val questionId: String) : ViewModel() {
 
@@ -31,6 +32,16 @@ class ChatViewModel(private val questionId: String) : ViewModel() {
     private var question: QuestionEntity? = null
     private var bankName: String = ""
 
+    /** 会话内消息自增 id：保存时定位具体是哪条回复 */
+    private var nextMessageId = 1L
+
+    /** 历史携带上限（轮）：一轮 = user + assistant */
+    private val historyMaxRounds = 6
+
+    // ===== 临时诊断（v19）：定位保存按钮失效后随调试面板一起删除 =====
+    private var saveClickCount = 0
+    private var lastOpenSaveResult = "未触发"
+
     private val stateFlow = MutableStateFlow(
         ChatUiState(
             modelName = "未配置",
@@ -40,6 +51,7 @@ class ChatViewModel(private val questionId: String) : ViewModel() {
             sending = false,
             errorBannerText = null,
             saveDialog = null,
+            debugText = "",
         ),
     )
     val state: StateFlow<ChatUiState> = stateFlow.asStateFlow()
@@ -77,7 +89,11 @@ class ChatViewModel(private val questionId: String) : ViewModel() {
         when (event) {
             is ChatEvent.InputChange -> stateFlow.value = stateFlow.value.copy(input = event.text)
             ChatEvent.Send -> send()
-            ChatEvent.SaveClick -> openSaveDialog()
+            is ChatEvent.SaveClick -> {
+                saveClickCount++            // 临时诊断（v19）
+                openSaveDialog(event.messageId)
+                refreshDebug()               // 临时诊断（v19）
+            }
             is ChatEvent.SaveConfirm -> saveNote(event.title, event.content)
             ChatEvent.SaveCancel -> stateFlow.value = stateFlow.value.copy(saveDialog = null)
             else -> Unit // Back 由导航层处理
@@ -87,31 +103,12 @@ class ChatViewModel(private val questionId: String) : ViewModel() {
     private fun send() {
         val text = stateFlow.value.input.trim()
         if (text.isEmpty() || stateFlow.value.sending) return
-        val q = question
-        // user 消息：题目上下文（若有）+ 用户问题
-        val userMessage = buildString {
-            if (q != null) {
-                val options = parseOptions(q.optionsJson)
-                val answers = parseAnswers(q.answersJson).distinct().filter { it in options.indices }
-                // 判断题用选项文本更自然（如「对」）；其余题型用字母拼接（如「ACD」）
-                val answerText = if (q.type == "judge") {
-                    answers.joinToString("、") { options[it] }
-                } else {
-                    answers.joinToString("") { ('A' + it).toString() }
-                }
-                append("我在刷一道选择题，请帮我理解：\n")
-                append("题干：").append(q.stem).append('\n')
-                options.forEachIndexed { i, opt -> append('A' + i).append("．").append(opt).append('\n') }
-                append("正确答案：").append(answerText).append('\n')
-                append("参考解析：").append(q.explanation).append("\n\n")
-            }
-            append("我的问题：").append(text)
-        }
-
+        // 请求消息：system（角色 + 篇幅约束 + 题目上下文）+ 最近 6 轮历史 + 本轮问题
+        val requestMessages = buildRequestMessages(text)
         stateFlow.value = stateFlow.value.copy(
             messages = stateFlow.value.messages + listOf(
-                ChatMessageUi(ChatRole.ME, text, streaming = false, showSave = false),
-                ChatMessageUi(ChatRole.AI, "", streaming = true, showSave = false),
+                ChatMessageUi(nextMessageId++, ChatRole.ME, text, streaming = false, showSave = false),
+                ChatMessageUi(nextMessageId++, ChatRole.AI, "", streaming = true, showSave = false),
             ),
             input = "",
             sending = true,
@@ -124,10 +121,8 @@ class ChatViewModel(private val questionId: String) : ViewModel() {
                 finishStreamWithError("模型未配置，请先到「设置 - 模型配置」填写")
                 return@launch
             }
-            val system = "你是一位耐心的中文技术答疑助手，面向刷题学习者。" +
-                "回答准确、条理清晰，先直接回答问题，再补充必要的背景与关联知识。"
             runCatching {
-                llm.chatStream(settings, system, userMessage).collect { delta ->
+                llm.chatStream(settings, requestMessages).collect { delta ->
                     appendDelta(delta)
                 }
             }.onFailure { e ->
@@ -136,8 +131,63 @@ class ChatViewModel(private val questionId: String) : ViewModel() {
                 // 正常完成：去掉 streaming 态，有内容则显示保存入口
                 updateLastAi { msg -> msg.copy(streaming = false, showSave = msg.text.isNotEmpty()) }
                 stateFlow.value = stateFlow.value.copy(sending = false)
+                refreshDebug()   // 临时诊断（v19）
             }
         }
+    }
+
+    /** system：答疑角色 + 篇幅约束；有题目时附带题目上下文（每轮可见，历史截断也不丢） */
+    private fun buildSystemPrompt(): String {
+        val base = "你是一位耐心的中文技术答疑助手，面向刷题学习者。" +
+            "回答准确、条理清晰，先直接回答问题，再补充必要的背景与关联知识。" +
+            "默认控制篇幅、简洁作答（一般不超过 200 字）；仅当用户明确要求详细讲解时才展开。"
+        val q = question ?: return base
+        val options = parseOptions(q.optionsJson)
+        val answers = parseAnswers(q.answersJson).distinct().filter { it in options.indices }
+        // 判断题用选项文本更自然（如「对」）；其余题型用字母拼接（如「ACD」）
+        val answerText = if (q.type == "judge") {
+            answers.joinToString("、") { options[it] }
+        } else {
+            answers.joinToString("") { ('A' + it).toString() }
+        }
+        return buildString {
+            append(base).append("\n\n【当前题目】\n")
+            append("题干：").append(q.stem).append('\n')
+            options.forEachIndexed { i, opt -> append('A' + i).append("．").append(opt).append('\n') }
+            append("正确答案：").append(answerText).append('\n')
+            append("参考解析：").append(q.explanation)
+        }
+    }
+
+    /** 组多轮请求：system + 最近 6 轮已完成对话（同角色合并，超限截断）+ 本轮问题 */
+    private fun buildRequestMessages(currentInput: String): List<LlmMessage> {
+        val history = mutableListOf<LlmMessage>()
+        stateFlow.value.messages.forEach { message ->
+            if (message.text.isBlank()) return@forEach
+            val role = if (message.role == ChatRole.ME) "user" else "assistant"
+            val last = history.lastOrNull()
+            if (last != null && last.role == role) {
+                history[history.lastIndex] = last.copy(content = last.content + "\n\n" + message.text)
+            } else {
+                history += LlmMessage(role, message.text)
+            }
+        }
+        val result = mutableListOf(LlmMessage("system", buildSystemPrompt()))
+        result += trimHistory(history)
+        val last = result.lastOrNull()
+        if (last != null && last.role == "user") {
+            // 上一条 AI 回复为空被跳过时会出现连续 user，合并避免协议报错
+            result[result.lastIndex] = last.copy(content = last.content + "\n\n" + currentInput)
+        } else {
+            result += LlmMessage("user", currentInput)
+        }
+        return result
+    }
+
+    /** 历史上限：最近 6 轮（12 条）；截断后确保首条为 user（协议要求） */
+    private fun trimHistory(history: List<LlmMessage>): List<LlmMessage> {
+        if (history.size <= historyMaxRounds * 2) return history
+        return history.takeLast(historyMaxRounds * 2).dropWhile { it.role != "user" }
     }
 
     /** 追加增量到最后一条 AI 消息 */
@@ -161,21 +211,34 @@ class ChatViewModel(private val questionId: String) : ViewModel() {
             sending = false,
             errorBannerText = reason,
         )
+        refreshDebug()   // 临时诊断（v19）
     }
 
-    private fun openSaveDialog() {
-        val lastAi = stateFlow.value.messages.lastOrNull { it.role == ChatRole.AI } ?: return
-        if (lastAi.text.isEmpty()) return
-        val questionTitle = stateFlow.value.messages.lastOrNull { it.role == ChatRole.ME }?.text ?: ""
+    /** 打开保存弹窗：按消息 id 取该条 AI 回复，标题取它之前最近一条 ME 消息 */
+    private fun openSaveDialog(messageId: Long) {
+        val messages = stateFlow.value.messages
+        val aiIndex = messages.indexOfLast { it.id == messageId && it.role == ChatRole.AI }
+        if (aiIndex < 0) {
+            lastOpenSaveResult = "未找到消息"   // 临时诊断（v19）
+            return
+        }
+        val ai = messages[aiIndex]
+        if (ai.text.isEmpty()) {
+            lastOpenSaveResult = "空文本"       // 临时诊断（v19）
+            return
+        }
+        val meText = messages.subList(0, aiIndex).lastOrNull { it.role == ChatRole.ME }?.text.orEmpty()
+        val titleSource = meText.ifBlank { question?.stem.orEmpty() }
         val sourceLine = if (question != null) {
             "\n\n来源：$bankName · 第 ${question!!.orderIndex + 1} 题"
         } else {
             ""
         }
+        lastOpenSaveResult = "正常"             // 临时诊断（v19）
         stateFlow.value = stateFlow.value.copy(
             saveDialog = SaveNoteDialogState(
-                title = if (questionTitle.length > 20) questionTitle.take(20) else questionTitle.ifBlank { "AI 回答笔记" },
-                content = lastAi.text + sourceLine,
+                title = if (titleSource.length > 20) titleSource.take(20) else titleSource.ifBlank { "AI 回答笔记" },
+                content = ai.text + sourceLine,
             ),
         )
     }
@@ -191,7 +254,18 @@ class ChatViewModel(private val questionId: String) : ViewModel() {
                 bankName = bankName.ifBlank { null },
             )
             stateFlow.value = stateFlow.value.copy(saveDialog = null)
+            refreshDebug()   // 临时诊断（v19）
         }
+    }
+
+    /** 临时诊断（v19）：汇总保存链路关键状态，定位保存按钮失效后删除 */
+    private fun refreshDebug() {
+        val messages = stateFlow.value.messages
+        val lastAi = messages.lastOrNull { it.role == ChatRole.AI }
+        val dialogOpen = if (stateFlow.value.saveDialog != null) "开" else "关"
+        stateFlow.value = stateFlow.value.copy(
+            debugText = "点击到达=$saveClickCount 弹窗=$dialogOpen 早退=$lastOpenSaveResult 末条长度=${lastAi?.text?.length ?: -1}",
+        )
     }
 
     class Factory(private val questionId: String) : ViewModelProvider.Factory {

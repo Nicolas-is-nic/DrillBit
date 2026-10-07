@@ -42,6 +42,10 @@ object ServiceLocator {
         com.drillbit.data.repo.WrongRepository(database)
     }
 
+    val favoriteRepository: com.drillbit.data.repo.FavoriteRepository by lazy {
+        com.drillbit.data.repo.FavoriteRepository(database)
+    }
+
     val llmClient: com.drillbit.data.net.LlmClient by lazy {
         com.drillbit.data.net.LlmClient()
     }

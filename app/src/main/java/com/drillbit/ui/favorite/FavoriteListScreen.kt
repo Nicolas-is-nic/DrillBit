@@ -1,4 +1,4 @@
-package com.drillbit.ui.wrong
+package com.drillbit.ui.favorite
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -19,31 +19,31 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.drillbit.ui.components.DBButton
 import com.drillbit.ui.components.DBCard
 import com.drillbit.ui.components.DbTopBar
 import com.drillbit.ui.components.DbTopBarAction
-import com.drillbit.ui.components.TagChip
-import com.drillbit.ui.components.TagChipType
-import com.drillbit.ui.theme.DrillBitTheme
-import com.drillbit.ui.theme.dbColors
-import com.drillbit.ui.components.DBButton
 import com.drillbit.ui.components.ExplainCard
 import com.drillbit.ui.components.OptionRow
 import com.drillbit.ui.components.OptionState
 import com.drillbit.ui.components.ScrimModal
+import com.drillbit.ui.components.TagChip
+import com.drillbit.ui.theme.DrillBitTheme
+import com.drillbit.ui.theme.dbColors
 
-/** P8 错题集（Tab2）：错题行带重考计数，顶部「全部重考」发起一次重考 */
+/** P20 我的收藏（F2）：收藏行 + 顶部「刷收藏」发起可反复刷的收藏会话（契约 7.15） */
 @Composable
-fun WrongListScreen(state: WrongListUiState, onEvent: (WrongListEvent) -> Unit) {
+fun FavoriteListScreen(state: FavoriteListUiState, onEvent: (FavoriteListEvent) -> Unit) {
     val colors = dbColors()
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
             DbTopBar(
-                title = "错题",
+                title = "我的收藏",
+                onBack = { onEvent(FavoriteListEvent.Back) },
                 actions = {
                     DbTopBarAction(
-                        text = "全部重考",
-                        onClick = { onEvent(WrongListEvent.RetryAll) },
+                        text = "刷收藏",
+                        onClick = { onEvent(FavoriteListEvent.StartQuiz) },
                     )
                 },
             )
@@ -60,42 +60,35 @@ fun WrongListScreen(state: WrongListUiState, onEvent: (WrongListEvent) -> Unit) 
                     color = colors.text2,
                     modifier = Modifier.padding(bottom = 10.dp),
                 )
-                DBButton(
-                    text = "我的收藏",
-                    onClick = { onEvent(WrongListEvent.FavoriteEntryClick) },
-                    modifier = Modifier.fillMaxWidth(),
-                    type = com.drillbit.ui.components.DBButtonType.GHOST,
-                )
-                Spacer(Modifier.height(14.dp))
                 if (state.items.isEmpty()) {
-                    // 空态文案由契约 7.5 指定
+                    // 空态文案由契约 7.15 指定
                     Text(
-                        text = "暂无错题，继续加油",
+                        text = "暂无收藏，刷题时点亮星标即可收藏",
                         style = MaterialTheme.typography.bodyMedium,
                         color = colors.text2,
                         modifier = Modifier.padding(top = 24.dp).fillMaxWidth(),
                     )
                 } else {
                     state.items.forEach { item ->
-                        WrongRow(
+                        FavoriteRow(
                             item = item,
-                            onClick = { onEvent(WrongListEvent.ItemClick(item.questionId)) },
+                            onClick = { onEvent(FavoriteListEvent.ItemClick(item.questionId)) },
                         )
                     }
                 }
                 Spacer(Modifier.height(16.dp))
             }
         }
-        // 方案 A：错题详情就地弹层（只读题面，复用通用组件）
+        // 方案 A 同错题集：只读详情就地弹层
         state.detailDialog?.let { detail ->
-            WrongDetailDialog(detail = detail, onEvent = onEvent)
+            FavoriteDetailDialog(detail = detail, onEvent = onEvent)
         }
     }
 }
 
-/** 错题行：题干摘要 + 重考计数 + 来源题库与日期 */
+/** 收藏行：题干摘要 + 收藏标记 + 来源题库与收藏日期 */
 @Composable
-private fun WrongRow(item: WrongItem, onClick: () -> Unit) {
+private fun FavoriteRow(item: FavoriteItem, onClick: () -> Unit) {
     val colors = dbColors()
     DBCard(
         modifier = Modifier.padding(bottom = 10.dp),
@@ -112,10 +105,7 @@ private fun WrongRow(item: WrongItem, onClick: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            TagChip(
-                text = item.countText,
-                type = TagChipType.WARN,
-            )
+            TagChip(text = "已收藏")
             Text(
                 text = "${item.bankName} · ${item.dateText}",
                 style = MaterialTheme.typography.labelSmall,
@@ -125,17 +115,11 @@ private fun WrongRow(item: WrongItem, onClick: () -> Unit) {
     }
 }
 
-/** 错题详情弹层：完整题面 + 全部正确项标绿（multi 多元素）+ 解析 + 当前计数（只读态，方案 A） */
+/** 收藏详情弹层：完整题面 + 全部正确项标绿 + 解析（只读态，无计数） */
 @Composable
-private fun WrongDetailDialog(detail: WrongDetailUi, onEvent: (WrongListEvent) -> Unit) {
+private fun FavoriteDetailDialog(detail: FavoriteDetailUi, onEvent: (FavoriteListEvent) -> Unit) {
     val colors = dbColors()
     ScrimModal {
-        Text(
-            text = "重考计数 ${detail.countText}",
-            style = MaterialTheme.typography.labelMedium,
-            color = colors.primary,
-        )
-        Spacer(Modifier.height(8.dp))
         Text(
             text = detail.stem,
             style = MaterialTheme.typography.titleMedium,
@@ -155,81 +139,54 @@ private fun WrongDetailDialog(detail: WrongDetailUi, onEvent: (WrongListEvent) -
         Spacer(Modifier.height(12.dp))
         DBButton(
             text = "关闭",
-            onClick = { onEvent(WrongListEvent.DetailDismiss) },
+            onClick = { onEvent(FavoriteListEvent.DetailDismiss) },
             modifier = Modifier.fillMaxWidth(),
         )
     }
 }
 
-/** 预览假数据：14 题待清，计数各不相同 */
-private fun previewState() = WrongListUiState(
+/** 预览假数据：3 题收藏，来源与日期各不相同 */
+private fun previewState() = FavoriteListUiState(
     items = listOf(
-        WrongItem(
-            questionId = "q-1001",
-            stemPreview = "自注意力机制的计算复杂度随序列长度如何增长？",
-            bankName = "大模型基础",
-            dateText = "09-28",
-            countText = "重考计数 3/3",
-        ),
-        WrongItem(
-            questionId = "q-1002",
+        FavoriteItem(
+            questionId = "q-2001",
             stemPreview = "ReAct 范式中观察（Observation）的作用是什么？",
             bankName = "Agent 与工具调用",
-            dateText = "09-28",
-            countText = "重考计数 2/3",
+            dateText = "10-06",
         ),
-        WrongItem(
-            questionId = "q-1003",
+        FavoriteItem(
+            questionId = "q-2002",
+            stemPreview = "关于位置编码，下列说法正确的有哪些？",
+            bankName = "大模型基础",
+            dateText = "10-05",
+        ),
+        FavoriteItem(
+            questionId = "q-2003",
             stemPreview = "LoRA 相比全量微调的主要优势是什么？",
             bankName = "模型微调与部署",
-            dateText = "09-27",
-            countText = "重考计数 1/3",
-        ),
-        WrongItem(
-            questionId = "q-1004",
-            stemPreview = "KV Cache 解决了推理中的什么问题？",
-            bankName = "大模型基础",
-            dateText = "09-26",
-            countText = "重考计数 3/3",
+            dateText = "10-05",
         ),
     ),
-    summaryText = "共 14 题待清 · 每答对一次，计数减一，减到 0 移出错题集",
+    summaryText = "共 3 题已收藏 · 可反复刷",
     detailDialog = null,
 )
 
-/** 预览假数据：空态 */
-private fun previewEmptyState() = WrongListUiState(
-    items = emptyList(),
-    summaryText = "共 0 题待清 · 每答对一次，计数减一，减到 0 移出错题集",
-    detailDialog = null,
-)
-
-@Preview(name = "错题集 · 亮色", widthDp = 360, heightDp = 780)
+@Preview(name = "收藏 · 亮色", widthDp = 360, heightDp = 780)
 @Composable
-private fun WrongListPreviewLight() {
+private fun FavoritePreviewLight() {
     DrillBitTheme {
         Box(modifier = Modifier.fillMaxSize().background(dbColors().bg)) {
-            WrongListScreen(state = previewState(), onEvent = {})
+            FavoriteListScreen(state = previewState(), onEvent = {})
         }
     }
 }
 
-@Preview(name = "错题集 · 暗色", widthDp = 360, heightDp = 780)
+@Preview(name = "收藏 · 暗色", widthDp = 360, heightDp = 780)
 @Composable
-private fun WrongListPreviewDark() {
+private fun FavoritePreviewDark() {
     DrillBitTheme(darkTheme = true) {
         Box(modifier = Modifier.fillMaxSize().background(dbColors().bg)) {
-            WrongListScreen(state = previewState(), onEvent = {})
-        }
-    }
-}
-
-@Preview(name = "错题集 · 空态 · 亮色", widthDp = 360, heightDp = 780)
-@Composable
-private fun WrongListEmptyPreviewLight() {
-    DrillBitTheme {
-        Box(modifier = Modifier.fillMaxSize().background(dbColors().bg)) {
-            WrongListScreen(state = previewEmptyState(), onEvent = {})
+            FavoriteListScreen(state = previewState(), onEvent = {})
         }
     }
 }

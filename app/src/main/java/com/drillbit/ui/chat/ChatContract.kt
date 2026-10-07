@@ -8,6 +8,7 @@ import com.drillbit.ui.components.ChatRole
  */
 
 data class ChatMessageUi(
+    val id: Long,                    // 会话内消息自增标识（保存时定位具体回复）
     val role: ChatRole,              // ME / AI
     val text: String,
     val streaming: Boolean,          // AI 回复生成中
@@ -26,13 +27,14 @@ data class ChatUiState(
     val input: String,
     val sending: Boolean,
     val errorBannerText: String?,    // 网络失败/流式中断提示
-    val saveDialog: SaveNoteDialogState?
+    val saveDialog: SaveNoteDialogState?,
+    val debugText: String = ""       // 临时诊断（v19）：保存按钮失效定位用，定位后删除
 )
 
 sealed interface ChatEvent {
     data class InputChange(val text: String) : ChatEvent
     data object Send : ChatEvent
-    data object SaveClick : ChatEvent            // 打开保存弹窗（对最后一条 AI 回复）
+    data class SaveClick(val messageId: Long) : ChatEvent   // 打开保存弹窗（对该条 AI 回复）
     data class SaveConfirm(val title: String, val content: String) : ChatEvent
     data object SaveCancel : ChatEvent
     data object Back : ChatEvent

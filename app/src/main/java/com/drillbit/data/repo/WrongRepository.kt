@@ -25,10 +25,12 @@ data class WrongListItem(
  */
 class WrongRepository(private val db: DrillBitDatabase) {
 
-    /** 错题列表 Flow（按最近答错时间倒序，逐条关联题目实体与题库名） */
+    /** 错题列表 Flow（按最近答错时间倒序，逐条关联题目实体与题库名；已删题不出现） */
     fun observeList(): Flow<List<WrongListItem>> = db.wrongDao().observeAll().map { wrongs ->
         val bankNames = db.bankDao().getAllOnce().associate { it.id to it.name }
+        val deleted = db.deletedQuestionDao().getAllOnce().map { it.questionId }.toSet()
         wrongs
+            .filterNot { it.questionId in deleted }
             .sortedByDescending { it.lastWrongAt }
             .map { w ->
                 val q = db.questionDao().getById(w.questionId)
@@ -60,9 +62,10 @@ class WrongRepository(private val db: DrillBitDatabase) {
         )
     }
 
-    /** 构建重考会话：全部错题按入集先后正序 */
+    /** 构建重考会话：全部错题按入集先后正序；已删题过滤 */
     suspend fun startRetrySession(): QuizSession? = withContext(Dispatchers.IO) {
-        val wrongs = db.wrongDao().getAllOnce().sortedBy { it.addedAt }
+        val deleted = db.deletedQuestionDao().getAllOnce().map { it.questionId }.toSet()
+        val wrongs = db.wrongDao().getAllOnce().sortedBy { it.addedAt }.filterNot { it.questionId in deleted }
         if (wrongs.isEmpty()) return@withContext null
         val bankNames = db.bankDao().getAllOnce().associate { it.id to it.name }
         val items = wrongs.mapNotNull { w ->

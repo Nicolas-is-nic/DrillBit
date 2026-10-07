@@ -114,3 +114,28 @@ data class NoteEntity(
     val createdAt: Long,
     val updatedAt: Long,
 )
+
+/**
+ * 已删题黑名单（F1）。不挂外键：题库更新会全量重建 questions，
+ * 删除标记必须独立存活，同步重导后过滤仍生效（远程不删，本地不再出现）。
+ */
+@Entity(tableName = "deleted_questions")
+data class DeletedQuestionEntity(
+    /** 同 questions.id（bankId:qid） */
+    @PrimaryKey val questionId: String,
+    val bankId: String,
+    val deletedAt: Long,
+)
+
+/**
+ * 收藏（F2）。不挂外键（同上）：题库全量重建不清收藏；
+ * bankName 存快照，题库删除后列表仍可展示来源。
+ */
+@Entity(tableName = "favorites")
+data class FavoriteEntity(
+    /** 同 questions.id（bankId:qid） */
+    @PrimaryKey val questionId: String,
+    val bankId: String,
+    val bankName: String,
+    val addedAt: Long,
+)

@@ -17,9 +17,14 @@ import java.io.IOException
 import java.util.concurrent.TimeUnit
 import java.util.UUID
 
+/** 一次对话消息：角色 system / user / assistant；Anthropic 协议需把 system 抽出置顶层 */
+data class LlmMessage(val role: String, val content: String)
+
 /**
  * 大模型客户端（spec 4.2.1，SSE 流式）：
- * OpenAI 兼容协议解析 choices[].delta.content；Anthropic 协议解析 content_block_delta 事件。
+ * 请求消息统一为列表（system / user / assistant）。OpenAI 兼容协议全量进 messages；
+ * Anthropic 协议抽 system 置顶层、其余交替消息进 messages。
+ * 解析 OpenAI 的 choices[].delta.content 与 Anthropic 的 content_block_delta 事件。
  * 请求与响应体读取全程 Dispatchers.IO（红线）。
  */
 class LlmClient {
@@ -36,31 +41,24 @@ class LlmClient {
     /**
      * 流式对话：返回增量文本 Flow；Flow 正常结束=回复完成，抛异常=失败/中断。
      */
-    fun chatStream(settings: DbSettings, system: String, user: String): Flow<String> =
+    fun chatStream(settings: DbSettings, messages: List<LlmMessage>): Flow<String> =
         channelFlow {
             withContext(Dispatchers.IO) {
                 val isAnthropic = settings.llmType == "anthropic"
                 val url = endpointUrl(settings.llmUrl, isAnthropic)
                 val body = if (isAnthropic) {
+                    val system = messages.firstOrNull { it.role == "system" }?.content.orEmpty()
                     JSONObject()
                         .put("model", settings.llmModel)
                         .put("system", system)
                         .put("max_tokens", 2048)
                         .put("stream", true)
-                        .put(
-                            "messages",
-                            JSONArray().put(JSONObject().put("role", "user").put("content", user)),
-                        )
+                        .put("messages", toMessagesJson(messages.filter { it.role != "system" }))
                 } else {
                     JSONObject()
                         .put("model", settings.llmModel)
                         .put("stream", true)
-                        .put(
-                            "messages",
-                            JSONArray()
-                                .put(JSONObject().put("role", "system").put("content", system))
-                                .put(JSONObject().put("role", "user").put("content", user)),
-                        )
+                        .put("messages", toMessagesJson(messages))
                 }
                 val builder = Request.Builder()
                     .url(url)
@@ -137,6 +135,15 @@ class LlmClient {
             }
         }
         System.currentTimeMillis() - start
+    }
+
+    /** 消息列表转 OpenAI / Anthropic 共用的 messages JSON 数组 */
+    private fun toMessagesJson(messages: List<LlmMessage>): JSONArray {
+        val arr = JSONArray()
+        messages.forEach { m ->
+            arr.put(JSONObject().put("role", m.role).put("content", m.content))
+        }
+        return arr
     }
 
     /** url 去尾部斜杠（用户配置可能带或不带结尾 /） */

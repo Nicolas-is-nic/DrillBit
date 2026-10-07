@@ -92,3 +92,35 @@ interface NoteDao {
     @Query("SELECT COUNT(*) FROM notes")
     suspend fun count(): Int
 }
+
+/** 已删题黑名单（F1） */
+@Dao
+interface DeletedQuestionDao {
+    @Query("SELECT * FROM deleted_questions")
+    suspend fun getAllOnce(): List<DeletedQuestionEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(deleted: DeletedQuestionEntity)
+
+    @Query("SELECT questionId FROM deleted_questions WHERE bankId = :bankId")
+    suspend fun idsByBank(bankId: String): List<String>
+}
+
+/** 收藏（F2） */
+@Dao
+interface FavoriteDao {
+    @Query("SELECT * FROM favorites ORDER BY addedAt ASC")
+    fun observeAll(): Flow<List<FavoriteEntity>>
+
+    @Query("SELECT * FROM favorites ORDER BY addedAt ASC")
+    suspend fun getAllOnce(): List<FavoriteEntity>
+
+    @Query("SELECT questionId FROM favorites")
+    suspend fun allIdsOnce(): List<String>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(favorite: FavoriteEntity)
+
+    @Query("DELETE FROM favorites WHERE questionId = :questionId")
+    suspend fun deleteByQuestionId(questionId: String)
+}

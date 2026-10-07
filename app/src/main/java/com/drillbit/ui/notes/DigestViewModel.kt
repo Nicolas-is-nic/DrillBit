@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.drillbit.ServiceLocator
 import com.drillbit.data.repo.NoteRepository
+import com.drillbit.data.net.LlmMessage
 import com.drillbit.util.TimeFmt
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -88,7 +89,9 @@ class DigestViewModel : ViewModel() {
             val builder = StringBuilder()
             val (system, user) = prompt
             runCatching {
-                ServiceLocator.llmClient.chatStream(settings, system, user).collect { delta ->
+                // 分发梳理：system + user 两条消息（LlmMessage 列表接口）
+                val chatMessages = listOf(LlmMessage("system", system), LlmMessage("user", user))
+                ServiceLocator.llmClient.chatStream(settings, chatMessages).collect { delta ->
                     builder.append(delta)
                     // 流式中间态：已生成文本作为单 section 实时展示
                     stateFlow.value = stateFlow.value.copy(

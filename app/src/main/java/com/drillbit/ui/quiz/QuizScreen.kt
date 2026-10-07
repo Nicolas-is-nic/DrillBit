@@ -1,6 +1,11 @@
 package com.drillbit.ui.quiz
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.Icon
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -30,6 +35,7 @@ import com.drillbit.ui.components.DbTopBarInfo
 import com.drillbit.ui.components.ExplainCard
 import com.drillbit.ui.components.OptionRow
 import com.drillbit.ui.components.OptionState
+import com.drillbit.ui.components.ScrimModal
 import com.drillbit.ui.components.TagChip
 import com.drillbit.ui.theme.DrillBitTheme
 import com.drillbit.ui.theme.dbColors
@@ -116,6 +122,45 @@ fun QuizScreen(state: QuizUiState, onEvent: (QuizEvent) -> Unit) {
             }
         }
     }
+
+    if (state.confirmDelete) {
+        DeleteConfirmDialog(onEvent = onEvent)
+    }
+}
+
+/** 删除二次确认弹窗（F1）：本地删题不入回收站，同步重建后过滤仍生效 */
+@Composable
+private fun DeleteConfirmDialog(onEvent: (QuizEvent) -> Unit) {
+    val colors = dbColors()
+    ScrimModal {
+        Text(
+            text = "删除本题",
+            style = MaterialTheme.typography.titleMedium,
+            color = colors.text,
+        )
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = "本地删除，不再出现在刷题、混合抽题与错题集；题库同步更新后也不会恢复。",
+            style = MaterialTheme.typography.labelMedium,
+            color = colors.text2,
+        )
+        Spacer(Modifier.height(12.dp))
+        Row(modifier = Modifier.fillMaxWidth()) {
+            DBButton(
+                text = "取消",
+                onClick = { onEvent(QuizEvent.DeleteCancel) },
+                modifier = Modifier.weight(1f),
+                type = DBButtonType.GHOST,
+            )
+            Spacer(Modifier.width(9.dp))
+            DBButton(
+                text = "删除",
+                onClick = { onEvent(QuizEvent.DeleteConfirm) },
+                modifier = Modifier.weight(1f),
+                type = DBButtonType.WARN,
+            )
+        }
+    }
 }
 
 /** 题干、选项、解析与答后提示 */
@@ -135,12 +180,25 @@ private fun QuestionContent(state: QuizUiState, onEvent: (QuizEvent) -> Unit) {
             type = BannerType.INFO,
         )
     }
-    Text(
-        text = state.question.stem,
-        style = MaterialTheme.typography.titleMedium,
-        color = colors.text,
-        modifier = Modifier.padding(top = 8.dp),
-    )
+    Row(verticalAlignment = androidx.compose.ui.Alignment.Top) {
+        Text(
+            text = state.question.stem,
+            style = MaterialTheme.typography.titleMedium,
+            color = colors.text,
+            modifier = Modifier
+                .weight(1f)
+                .padding(top = 8.dp),
+        )
+        Icon(
+            imageVector = Icons.Filled.Star,
+            contentDescription = if (state.question.isFavorite) "取消收藏" else "收藏本题",
+            tint = if (state.question.isFavorite) colors.primary else colors.off,
+            modifier = Modifier
+                .padding(start = 8.dp, top = 10.dp)
+                .size(24.dp)
+                .clickable { onEvent(QuizEvent.FavoriteClick) },
+        )
+    }
     Spacer(Modifier.height(12.dp))
     state.question.options.forEachIndexed { index, option ->
         OptionRow(
@@ -224,10 +282,12 @@ private fun previewAnsweringState() = QuizUiState(
         stem = "在标准 Transformer 中，自注意力机制的计算复杂度随序列长度 n 如何增长（忽略常数因子）？",
         options = listOf("O(n)", "O(n log n)", "O(n²)", "O(n³)"),
         type = QuestionType.SINGLE,
+        isFavorite = false,
         sourceBankName = null,
     ),
     answered = null,
     selectedIndices = emptyList(),
+    confirmDelete = false,
     finished = false,
 )
 
@@ -263,6 +323,7 @@ private fun previewMixState() = QuizUiState(
             "触发下一次采样温度调整",
         ),
         type = QuestionType.SINGLE,
+        isFavorite = false,
         sourceBankName = "Agent 与工具调用",
     ),
     answered = AnsweredUi(
@@ -275,6 +336,7 @@ private fun previewMixState() = QuizUiState(
         countBannerText = null,
     ),
     selectedIndices = emptyList(),
+    confirmDelete = false,
     finished = false,
 )
 
@@ -296,6 +358,7 @@ private fun previewRetryState() = QuizUiState(
             "训练后不需要推理框架支持",
         ),
         type = QuestionType.SINGLE,
+        isFavorite = false,
         sourceBankName = null,
     ),
     answered = AnsweredUi(
@@ -308,6 +371,7 @@ private fun previewRetryState() = QuizUiState(
         countBannerText = "本题重考计数 2/3 · 本次答对后变为 1/3",
     ),
     selectedIndices = emptyList(),
+    confirmDelete = false,
     finished = false,
 )
 

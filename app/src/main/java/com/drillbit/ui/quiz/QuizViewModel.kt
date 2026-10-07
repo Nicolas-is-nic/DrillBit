@@ -28,6 +28,9 @@ class QuizViewModel(private val mode: QuizMode, private val bankId: String) : Vi
     private var cursor: Int = 0
     private var correctCount: Int = 0
 
+    /** 会话内收藏 id 集合（F2）：会话开始时加载一次，星标 toggle 时增量维护 */
+    private var favoriteIds: Set<String> = emptySet()
+
     private val stateFlow = MutableStateFlow(
         QuizUiState(
             mode = mode,
@@ -37,9 +40,16 @@ class QuizViewModel(private val mode: QuizMode, private val bankId: String) : Vi
             correctCount = 0,
             progress = 0f,
             phase = QuizPhase.ANSWERING,
-            question = QuestionUi(stem = "", options = emptyList(), type = QuestionType.SINGLE, sourceBankName = null),
+            question = QuestionUi(
+                stem = "",
+                options = emptyList(),
+                type = QuestionType.SINGLE,
+                isFavorite = false,
+                sourceBankName = null,
+            ),
             answered = null,
             selectedIndices = emptyList(),
+            confirmDelete = false,
             finished = false,
         ),
     )
@@ -52,7 +62,7 @@ class QuizViewModel(private val mode: QuizMode, private val bankId: String) : Vi
     private suspend fun loadSession() {
         val s = when (mode) {
             QuizMode.SINGLE -> repo.startSingle(bankId)
-            QuizMode.MIX, QuizMode.RETRY -> SessionHolder.take()
+            QuizMode.MIX, QuizMode.RETRY, QuizMode.FAVORITE -> SessionHolder.take()
         }
         session = s
         if (s == null || s.questions.isEmpty()) {
@@ -62,6 +72,7 @@ class QuizViewModel(private val mode: QuizMode, private val bankId: String) : Vi
         }
         cursor = s.startIndex
         correctCount = 0
+        favoriteIds = repo.favoriteIds()
         publishCurrent()
     }
 
@@ -70,6 +81,12 @@ class QuizViewModel(private val mode: QuizMode, private val bankId: String) : Vi
             is QuizEvent.OptionClick -> onOptionClick(event.index)
             QuizEvent.ConfirmClick -> confirmAnswer()
             QuizEvent.Next -> next()
+            QuizEvent.FavoriteClick -> toggleFavorite()
+            QuizEvent.DeleteClick ->
+                stateFlow.value = stateFlow.value.copy(confirmDelete = true)
+            QuizEvent.DeleteConfirm -> deleteCurrentQuestion()
+            QuizEvent.DeleteCancel ->
+                stateFlow.value = stateFlow.value.copy(confirmDelete = false)
             else -> Unit // AskAi / Back 由导航层处理
         }
     }
@@ -151,6 +168,33 @@ class QuizViewModel(private val mode: QuizMode, private val bankId: String) : Vi
         }
     }
 
+    /** toggle 收藏当前题（F2）：更新内存集合与题目星标态 */
+    private fun toggleFavorite() {
+        val s = session ?: return
+        val sq = s.questions.getOrNull(cursor) ?: return
+        val q = sq.entity
+        viewModelScope.launch {
+            val favored = repo.toggleFavorite(q.id, q.bankId, sq.bankName)
+            favoriteIds = if (favored) favoriteIds + q.id else favoriteIds - q.id
+            stateFlow.value = stateFlow.value.copy(
+                question = stateFlow.value.question.copy(isFavorite = q.id in favoriteIds),
+            )
+        }
+    }
+
+    /** 确认删除当前题（F1）：入黑名单+连带清错题/收藏，然后跳下一题（末题则完成页） */
+    private fun deleteCurrentQuestion() {
+        val s = session ?: return
+        val sq = s.questions.getOrNull(cursor) ?: return
+        val q = sq.entity
+        viewModelScope.launch {
+            repo.deleteQuestion(q.id, q.bankId)
+            stateFlow.value = stateFlow.value.copy(confirmDelete = false)
+            // 删除仅答后可达，phase 必为 ANSWERED，next() 直接复用
+            next()
+        }
+    }
+
     private fun next() {
         val s = session ?: return
         if (stateFlow.value.phase != QuizPhase.ANSWERED) return
@@ -178,16 +222,19 @@ class QuizViewModel(private val mode: QuizMode, private val bankId: String) : Vi
             currentIndex = currentIndex,
             totalCount = s.questions.size,
             correctCount = correctCount,
-            progress = if (s.questions.isEmpty()) 0f else currentIndex.toFloat() / s.questions.size,
+            progress = if (s.questions.isEmpty()) 0f
+            else (currentIndex.toFloat() / s.questions.size).coerceIn(0f, 1f),
             phase = QuizPhase.ANSWERING,
             question = QuestionUi(
                 stem = q.stem,
                 options = parseOptions(q.optionsJson),
                 type = mapType(q.type),
+                isFavorite = q.id in favoriteIds,
                 sourceBankName = if (mode == QuizMode.MIX) sq.bankName else null,
             ),
             answered = null,
             selectedIndices = emptyList(),
+            confirmDelete = false,
             finished = false,
         )
     }
@@ -199,6 +246,7 @@ class QuizViewModel(private val mode: QuizMode, private val bankId: String) : Vi
         QuizMode.SINGLE -> "刷题"
         QuizMode.MIX -> "混合卷"
         QuizMode.RETRY -> "错题重考"
+        QuizMode.FAVORITE -> "我的收藏"
     }
 
     class Factory(

@@ -57,6 +57,7 @@ class WrongListViewModel : ViewModel() {
         when (event) {
             is WrongListEvent.ItemClick -> openDetail(event.questionId)
             WrongListEvent.DetailDismiss -> detailDialog.value = null
+            WrongListEvent.FavoriteEntryClick -> Unit // 导航层处理跳转
             WrongListEvent.RetryAll -> Unit // 导航层调 startRetry 处理
         }
     }

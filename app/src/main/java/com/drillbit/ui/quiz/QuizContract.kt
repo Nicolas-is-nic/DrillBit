@@ -4,9 +4,11 @@ package com.drillbit.ui.quiz
  * 契约来源：agent_docs/双模型分工开发方案.md 第 7.4 节（逐字复制，禁止改动字段名、类型与顺序）。
  * 2026-09-30 多选/判断题型支持：新增 QuestionType；AnsweredUi 单选 Int 改 List；
  * QuizUiState 增 selectedIndices；QuizEvent 增 ConfirmClick（文档已同步）。
+ * 2026-10-06 F1/F2：QuizMode 增 FAVORITE；QuestionUi 增 isFavorite；QuizUiState 增
+ * confirmDelete；QuizEvent 增 FavoriteClick/DeleteClick/DeleteConfirm/DeleteCancel（文档已同步）。
  */
 
-enum class QuizMode { SINGLE, MIX, RETRY }
+enum class QuizMode { SINGLE, MIX, RETRY, FAVORITE }
 enum class QuizPhase { ANSWERING, ANSWERED }
 enum class QuestionType { SINGLE, MULTI, JUDGE }
 
@@ -14,6 +16,7 @@ data class QuestionUi(
     val stem: String,
     val options: List<String>,
     val type: QuestionType,         // VM 由题库 type 字符串映射，未识别值按 SINGLE
+    val isFavorite: Boolean,        // 当前题收藏态，题干旁星标渲染
     val sourceBankName: String?     // 仅 MIX 模式非空，展示「来自：xxx」标签
 )
 
@@ -37,6 +40,7 @@ data class QuizUiState(
     val question: QuestionUi,
     val answered: AnsweredUi?,       // phase=ANSWERED 时非空
     val selectedIndices: List<Int>,  // 答前已选项（保留点击顺序）；multi 可多项，single/judge 至多 1 项；ANSWERED 后清空
+    val confirmDelete: Boolean,      // true 时弹「确认删除本题」弹窗（答后 DeleteClick 置位）
     val finished: Boolean            // true 时展示完成页：本次共 N 题、答对 M 题
 )
 
@@ -48,5 +52,9 @@ sealed interface QuizEvent {
         // selectedIndices 为空时按钮置 OFF 禁用，VM 兜底忽略该事件
     data object Next : QuizEvent
     data object AskAi : QuizEvent
+    data object FavoriteClick : QuizEvent   // 星标点击：toggle 收藏当前题（答前答后均可）
+    data object DeleteClick : QuizEvent     // 答后「删除本题」按钮：置 confirmDelete=true 弹确认
+    data object DeleteConfirm : QuizEvent   // 确认删除：入 DeletedQuestion 表+连带清错题/收藏，跳下一题（末题则完成页）
+    data object DeleteCancel : QuizEvent    // 取消删除弹窗
     data object Back : QuizEvent
 }

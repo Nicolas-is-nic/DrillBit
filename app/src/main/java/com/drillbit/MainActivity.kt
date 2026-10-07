@@ -45,6 +45,9 @@ import com.drillbit.ui.components.CrashDialogEvent
 import com.drillbit.ui.components.CrashDialogUi
 import com.drillbit.ui.components.DbBottomNavBar
 import com.drillbit.ui.components.dbTabs
+import com.drillbit.ui.favorite.FavoriteListEvent
+import com.drillbit.ui.favorite.FavoriteListScreen
+import com.drillbit.ui.favorite.FavoriteListViewModel
 import com.drillbit.ui.notes.BackupEvent
 import com.drillbit.ui.notes.BackupScreen
 import com.drillbit.ui.notes.BackupViewModel
@@ -209,6 +212,23 @@ fun DrillBitApp(
                             WrongListEvent.RetryAll -> vm.startRetry { ok ->
                                 if (ok) navController.navigate("quiz?mode=retry")
                             }
+                            WrongListEvent.FavoriteEntryClick -> navController.navigate("favorites")
+                            else -> vm.onEvent(event)
+                        }
+                    },
+                )
+            }
+            composable("favorites") {
+                val vm: FavoriteListViewModel = viewModel()
+                val state by vm.state.collectAsState()
+                FavoriteListScreen(
+                    state = state,
+                    onEvent = { event ->
+                        when (event) {
+                            FavoriteListEvent.Back -> navController.popBackStack()
+                            FavoriteListEvent.StartQuiz -> vm.startQuiz { ok ->
+                                if (ok) navController.navigate("quiz?mode=favorite")
+                            }
                             else -> vm.onEvent(event)
                         }
                     },
@@ -311,6 +331,7 @@ fun DrillBitApp(
                 val mode = when (entry.arguments?.getString("mode")) {
                     "mix" -> QuizMode.MIX
                     "retry" -> QuizMode.RETRY
+                    "favorite" -> QuizMode.FAVORITE
                     else -> QuizMode.SINGLE
                 }
                 val bankId = entry.arguments?.getString("bankId").orEmpty()

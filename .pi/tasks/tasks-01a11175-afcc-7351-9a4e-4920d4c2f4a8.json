@@ -1,0 +1,137 @@
+{
+  "nextId": 17,
+  "tasks": [
+    {
+      "id": "4",
+      "subject": "pbxproj 迁移同步组格式",
+      "description": "把 pbxproj 从 objectVersion 56 手工文件引用迁移到 Xcode 16 的 PBXFileSystemSynchronizedRootGroup（objectVersion 77），此后新增 Swift 文件零 pbxproj 维护",
+      "status": "completed",
+      "metadata": {},
+      "blocks": [],
+      "blockedBy": [],
+      "createdAt": 1791355407738,
+      "updatedAt": 1791355696353
+    },
+    {
+      "id": "5",
+      "subject": "双主题色板与深色切换",
+      "description": "Theme/ 色板文件：亮暗两套语义色（bg/card/text/text2/line/primary/ok/bad），色值取自安卓 Color.kt；手动深色开关经 preferredColorScheme 强制；UIColor 动态色桥接",
+      "status": "completed",
+      "metadata": {},
+      "blocks": [],
+      "blockedBy": [],
+      "createdAt": 1791355407739,
+      "updatedAt": 1791356764835
+    },
+    {
+      "id": "6",
+      "subject": "四 Tab 骨架与基础组件",
+      "description": "App/ 根 TabView 四 Tab（题库/错题/笔记/设置），未建设模块放占位页；Components/ 基础组件 DBCard/TopBar/SettingRow/DBTextField",
+      "status": "completed",
+      "metadata": {},
+      "blocks": [],
+      "blockedBy": [],
+      "createdAt": 1791355407739,
+      "updatedAt": 1791356764836
+    },
+    {
+      "id": "7",
+      "subject": "设置三屏与配置持久化",
+      "description": "Screens/Settings/ 三屏：设置首页（版本号/深色开关/两个配置入口/上次备份时间）、模型配置（url/key/model/类型选择）、服务器配置（url/token）；Data/Prefs AppSettings ObservableObject + UserDefaults 持久化，8 个配置键与安卓 DataStore 键名对齐",
+      "status": "completed",
+      "metadata": {},
+      "blocks": [],
+      "blockedBy": [],
+      "createdAt": 1791355407740,
+      "updatedAt": 1791356764837
+    },
+    {
+      "id": "8",
+      "subject": "崩溃捕获尽力而为版",
+      "description": "Util/CrashReporter：NSSetUncaughtExceptionHandler 捕获 NSException 写 Documents/crash_last.txt，下次启动根视图弹窗展示后删除；明确其局限（Swift 硬崩溃接不到）注释说明",
+      "status": "completed",
+      "metadata": {},
+      "blocks": [],
+      "blockedBy": [],
+      "createdAt": 1791355407740,
+      "updatedAt": 1791356764838
+    },
+    {
+      "id": "9",
+      "subject": "阶段 1 构建验证与提交",
+      "description": "xcodebuild 模拟器构建 + 启动验证，commit + push 远端；完成后用户真机验收（切深色、配置持久化、版本号 23）",
+      "status": "completed",
+      "metadata": {},
+      "blocks": [],
+      "blockedBy": [],
+      "createdAt": 1791355407741,
+      "updatedAt": 1791357054008
+    },
+    {
+      "id": "10",
+      "subject": "数据层与业务逻辑移植",
+      "description": "读安卓 data/db、data/net、data/repo、model 源码，GRDB 五表 + ServerApi + LlmClient(SSE 双协议) + 四 Repository + QuizSession/Sampling 移植",
+      "status": "completed",
+      "metadata": {},
+      "blocks": [],
+      "blockedBy": [],
+      "createdAt": 1791357037114,
+      "updatedAt": 1791358215909
+    },
+    {
+      "id": "12",
+      "subject": "题库模块 UI",
+      "description": "题库列表/详情两屏 + 同步更新流程（版本对比、下载校验、事务替换、删除）；替换占位页",
+      "status": "completed",
+      "metadata": {},
+      "blocks": [],
+      "blockedBy": [],
+      "createdAt": 1791357037115,
+      "updatedAt": 1791358215911
+    },
+    {
+      "id": "13",
+      "subject": "做题核心 UI",
+      "description": "刷题页三题型渲染 + 统一确认作答 + 对错反馈解析 + 错题弹层多正确项标绿 + 断点续刷 + 混合抽题配置页（Stepper）+ 加权抽题",
+      "status": "completed",
+      "metadata": {},
+      "blocks": [],
+      "blockedBy": [],
+      "createdAt": 1791357037116,
+      "updatedAt": 1791358215912
+    },
+    {
+      "id": "14",
+      "subject": "错题模块 UI",
+      "description": "错题集列表 + 错题重考 + 计数器状态机（仅重考场景变化）+ 重考顶部计数条",
+      "status": "completed",
+      "metadata": {},
+      "blocks": [],
+      "blockedBy": [],
+      "createdAt": 1791357037117,
+      "updatedAt": 1791358215912
+    },
+    {
+      "id": "15",
+      "subject": "笔记与 AI 问答 UI",
+      "description": "笔记列表/编辑/归纳稿/备份四屏 + Chat 页流式气泡 + 保存笔记 + 6 轮上下文 + 题目上下文注入",
+      "status": "completed",
+      "metadata": {},
+      "blocks": [],
+      "blockedBy": [],
+      "createdAt": 1791357037117,
+      "updatedAt": 1791358215913
+    },
+    {
+      "id": "16",
+      "subject": "集成验证与交付",
+      "description": "全量构建 + 模拟器跑通全流程（同步真实服务器题库、刷题、AI 流式）+ 提交推送 + 用户真机验收指引",
+      "status": "in_progress",
+      "metadata": {},
+      "blocks": [],
+      "blockedBy": [],
+      "createdAt": 1791357037118,
+      "updatedAt": 1791358215913
+    }
+  ]
+}

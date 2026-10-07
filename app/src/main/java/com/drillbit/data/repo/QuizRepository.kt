@@ -1,6 +1,8 @@
 package com.drillbit.data.repo
 
 import com.drillbit.data.db.DrillBitDatabase
+import com.drillbit.data.db.DeletedQuestionEntity
+import com.drillbit.data.db.FavoriteEntity
 import com.drillbit.data.db.ProgressEntity
 import com.drillbit.data.db.WrongEntity
 import com.drillbit.data.parseAnswers
@@ -16,10 +18,11 @@ import kotlinx.coroutines.withContext
  */
 class QuizRepository(private val db: DrillBitDatabase) {
 
-    /** 构建单库顺序刷会话（带断点） */
+    /** 构建单库顺序刷会话（带断点）；已删题过滤后入会 */
     suspend fun startSingle(bankId: String): QuizSession? = withContext(Dispatchers.IO) {
         val bank = db.bankDao().getById(bankId) ?: return@withContext null
-        val questions = db.questionDao().getByBank(bankId)
+        val deleted = db.deletedQuestionDao().idsByBank(bankId).toSet()
+        val questions = db.questionDao().getByBank(bankId).filterNot { it.id in deleted }
         if (questions.isEmpty()) return@withContext null
         var progress = db.progressDao().get(bankId)
         // 已刷完一轮（nextIndex 到达题数）：断点归零从头开新轮，否则重进只剩最后一题，答完即“结束”
@@ -64,6 +67,10 @@ class QuizRepository(private val db: DrillBitDatabase) {
             val nameById = banks.associate { it.id to it.name }
             val candidates = bankIds.flatMap { id ->
                 db.questionDao().getByBank(id).map { SessionQuestion(it, nameById[id] ?: "") }
+            }.let { all ->
+                // 已删题不参与抽题（F1：本地删除，远程不删）
+                val deleted = db.deletedQuestionDao().getAllOnce().map { it.questionId }.toSet()
+                all.filterNot { it.entity.id in deleted }
             }
             if (candidates.isEmpty()) return@withContext null
             QuizSession(
@@ -112,4 +119,34 @@ class QuizRepository(private val db: DrillBitDatabase) {
             .filter { it in 0 until optionsCount }
             .distinct()
     }
+
+    /**
+     * 本地删题（F1）：入黑名单 + 连带清错题记录与收藏。
+     * 题目行本身不删（同步 version+1 全量重建后黑名单过滤仍生效）。
+     */
+    suspend fun deleteQuestion(questionId: String, bankId: String): Unit = withContext(Dispatchers.IO) {
+        db.deletedQuestionDao().insert(
+            DeletedQuestionEntity(questionId, bankId, System.currentTimeMillis()),
+        )
+        db.wrongDao().deleteByQuestionId(questionId)
+        db.favoriteDao().deleteByQuestionId(questionId)
+    }
+
+    /** 全部已收藏题 id（会话内星标态用，会话开始时加载一次） */
+    suspend fun favoriteIds(): Set<String> = withContext(Dispatchers.IO) {
+        db.favoriteDao().allIdsOnce().toSet()
+    }
+
+    /** toggle 收藏（F2）：返回操作后是否已收藏 */
+    suspend fun toggleFavorite(questionId: String, bankId: String, bankName: String): Boolean =
+        withContext(Dispatchers.IO) {
+            val existing = db.favoriteDao().allIdsOnce().contains(questionId)
+            if (existing) {
+                db.favoriteDao().deleteByQuestionId(questionId)
+                false
+            } else {
+                db.favoriteDao().insert(FavoriteEntity(questionId, bankId, bankName, System.currentTimeMillis()))
+                true
+            }
+        }
 }

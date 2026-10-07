@@ -12,9 +12,18 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.changedToDown
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -41,6 +50,7 @@ fun ChatBubble(
     modifier: Modifier = Modifier,
     streaming: Boolean = false,
     showSave: Boolean = false,
+    forcePlainText: Boolean = false,   // 临时诊断（v20）：强制纯文本对照实验，定位后回退
     onSave: () -> Unit = {},
 ) {
     val colors = dbColors()
@@ -62,7 +72,7 @@ fun ChatBubble(
                 .then(if (isMe) Modifier else Modifier.border(1.dp, colors.line, shape))
                 .padding(horizontal = 12.dp, vertical = 10.dp),
         ) {
-            if (isMe || streaming) {
+            if (isMe || streaming || forcePlainText) {
                 // 用户消息与流式生成中：纯文本逐字显示（流式高频刷新，不做富渲染）
                 Text(
                     text = text,
@@ -71,13 +81,27 @@ fun ChatBubble(
                 )
             } else {
                 // AI 回答完成：Markdown 富渲染（列表/代码块/加粗等），配色自动跟随 MaterialTheme
-                Markdown(
-                    // 压缩 3+ 连续换行为标准段落分隔，避免模型输出多余空行导致大片留白
-                    content = text.replace(Regex("\\n{3,}"), "\\n\\n"),
-                    typography = markdownTypography(
-                        text = MaterialTheme.typography.bodyMedium.copy(lineHeight = 21.sp),
-                    ),
-                )
+                // 临时诊断（v20）：Markdown 区域落点探针，定位后回退
+                Box(
+                    modifier = Modifier.pointerInput(Unit) {
+                        awaitPointerEventScope {
+                            while (true) {
+                                val event = awaitPointerEvent(PointerEventPass.Initial)
+                                if (event.changes.any { it.changedToDown() }) {
+                                    ChatDebugProbe.lastDownTarget = "Markdown"
+                                }
+                            }
+                        }
+                    },
+                ) {
+                    Markdown(
+                        // 压缩 3+ 连续换行为标准段落分隔，避免模型输出多余空行导致大片留白
+                        content = text.replace(Regex("\\n{3,}"), "\\n\\n"),
+                        typography = markdownTypography(
+                            text = MaterialTheme.typography.bodyMedium.copy(lineHeight = 21.sp),
+                        ),
+                    )
+                }
             }
             if (streaming) {
                 Spacer(Modifier.height(6.dp))
@@ -89,12 +113,35 @@ fun ChatBubble(
             }
             if (!isMe && showSave) {
                 Spacer(Modifier.height(8.dp))
+                // 临时诊断（v19）：点击后先把按钮文案改为已点击，用于判断触摸是否送达按钮，定位后回退
+                var saveClicked by remember { mutableStateOf(false) }
                 // 标准按钮替代小热区文字：滚动容器内点击更可靠（真机反馈：文字点击无反应）
                 DBButton(
-                    text = "保存到笔记",
-                    onClick = onSave,
+                    text = if (saveClicked) "已点击" else "保存到笔记",
+                    onClick = {
+                        saveClicked = true
+                        ChatDebugProbe.lastDownTarget = "按钮点击回调"   // 临时诊断（v20）
+                        onSave()
+                    },
                     type = DBButtonType.GHOST,
-                    modifier = Modifier.fillMaxWidth(),
+                    // 临时诊断（v20）：按钮实际 bounds + 按钮范围按下探针，定位后回退
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onGloballyPositioned { coords ->
+                            val r = coords.boundsInRoot()
+                            ChatDebugProbe.buttonBounds =
+                                "[${r.left.toInt()},${r.top.toInt()},${r.right.toInt()},${r.bottom.toInt()}]"
+                        }
+                        .pointerInput(Unit) {
+                            awaitPointerEventScope {
+                                while (true) {
+                                    val event = awaitPointerEvent(PointerEventPass.Initial)
+                                    if (event.changes.any { it.changedToDown() }) {
+                                        ChatDebugProbe.lastDownTarget = "按钮"
+                                    }
+                                }
+                            }
+                        },
                 )
             }
         }
