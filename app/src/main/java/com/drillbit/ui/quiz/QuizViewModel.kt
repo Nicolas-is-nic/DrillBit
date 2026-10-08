@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.drillbit.ServiceLocator
 import com.drillbit.data.db.QuestionEntity
 import com.drillbit.data.parseOptions
+import com.drillbit.data.parseRecall
+import com.drillbit.data.recallImageFile
 import com.drillbit.data.repo.QuizRepository
 import com.drillbit.model.QuizSession
 import com.drillbit.model.SessionHolder
@@ -15,10 +17,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 /**
- * 刷题页 ViewModel（三模式共用，spec 4.2.1）：
+ * 刷题页 ViewModel（四模式共用，spec 4.2.1）：
  * - SINGLE：QuizRepository 构建带断点会话，每题落库推进断点
- * - MIX / RETRY：消费 SessionHolder 中的临时会话（配置页/错题集塞入），退出即弃
+ * - MIX / RETRY / FAVORITE：消费 SessionHolder 中的临时会话（配置页/错题集塞入），退出即弃
  * 错题计数规则（已拍板）：仅重考场景答对减 1、答错重置 3；单库/混合答错仅入集。
+ * recall 题（2026-10-08）：ConfirmClick 仅揭示（不判定），自评 RememberedClick/ForgotClick 才是
+ * 「作答」——走与选择题完全相同的对/错路径（入集、重考计数、断点落库均以自评为准）。
  */
 class QuizViewModel(private val mode: QuizMode, private val bankId: String) : ViewModel() {
 
@@ -80,6 +84,8 @@ class QuizViewModel(private val mode: QuizMode, private val bankId: String) : Vi
         when (event) {
             is QuizEvent.OptionClick -> onOptionClick(event.index)
             QuizEvent.ConfirmClick -> confirmAnswer()
+            QuizEvent.RememberedClick -> selfEval(remembered = true)
+            QuizEvent.ForgotClick -> selfEval(remembered = false)
             QuizEvent.Next -> next()
             QuizEvent.FavoriteClick -> toggleFavorite()
             QuizEvent.DeleteClick ->
@@ -98,6 +104,7 @@ class QuizViewModel(private val mode: QuizMode, private val bankId: String) : Vi
     private fun mapType(type: String): QuestionType = when (type) {
         "multi" -> QuestionType.MULTI
         "judge" -> QuestionType.JUDGE
+        "recall" -> QuestionType.RECALL
         else -> QuestionType.SINGLE
     }
 
@@ -115,12 +122,79 @@ class QuizViewModel(private val mode: QuizMode, private val bankId: String) : Vi
         stateFlow.value = stateFlow.value.copy(selectedIndices = next)
     }
 
-    /** 确认作答（所有题型）：已选项进入判定（空选为按钮禁用的兜底，直接忽略） */
+    /** 确认作答：选择题已选项进入判定；recall 题仅揭示思路（判定延后到自评） */
     private fun confirmAnswer() {
         if (stateFlow.value.phase == QuizPhase.ANSWERED) return
+        val sq = session?.questions?.getOrNull(cursor) ?: return
+        if (mapType(sq.entity.type) == QuestionType.RECALL) {
+            revealRecall()
+            return
+        }
         val selected = stateFlow.value.selectedIndices
         if (selected.isEmpty()) return
         answer(selected)
+    }
+
+    /**
+     * recall 揭示：进入 ANSWERED 但不做客观判定（契约 7.4）。
+     * 断点与 doneCount 不在此落库，等自评（记住了/没记住）时按对/错路径处理。
+     */
+    private fun revealRecall() {
+        stateFlow.value = stateFlow.value.copy(
+            phase = QuizPhase.ANSWERED,
+            answered = AnsweredUi(
+                selectedIndices = emptyList(),
+                correctIndices = emptyList(),
+                isCorrect = true,
+                explanation = "",
+                wrongBannerText = null,
+                countBannerText = null,
+            ),
+            selectedIndices = emptyList(),
+        )
+    }
+
+    /** recall 自评：记住了=答对（直接下一题）；没记住=答错（横幅+下一题）。与选择题共用错题/断点路径 */
+    private fun selfEval(remembered: Boolean) {
+        val s = session ?: return
+        if (stateFlow.value.phase != QuizPhase.ANSWERED) return
+        val sq = s.questions.getOrNull(cursor) ?: return
+        val q: QuestionEntity = sq.entity
+        viewModelScope.launch {
+            if (remembered) {
+                correctCount++
+                if (mode == QuizMode.RETRY) {
+                    // 重考答对减计数（结果文案不展示：契约拍板「记住了」直接下一题）
+                    ServiceLocator.wrongRepository.recordRetryResult(q.id, q.bankId, true)
+                }
+                if (mode == QuizMode.SINGLE) {
+                    repo.commitSingleProgress(s, q.orderIndex, answeredCountInSession())
+                }
+                next()
+                return@launch
+            }
+            // 没记住 = 答错：与选择题答错完全同路径
+            var wrongBanner: String? = null
+            var countBanner: String? = null
+            if (mode == QuizMode.RETRY) {
+                val (before, after) = ServiceLocator.wrongRepository
+                    .recordRetryResult(q.id, q.bankId, false)
+                wrongBanner = "答错 · 重考计数已重置为 $after"
+                countBanner = "重考计数 $before → $after"
+            } else {
+                val countText = repo.recordWrong(q.id, q.bankId)
+                wrongBanner = "已加入错题集 · 重考计数 $countText"
+            }
+            if (mode == QuizMode.SINGLE) {
+                repo.commitSingleProgress(s, q.orderIndex, answeredCountInSession())
+            }
+            stateFlow.value = stateFlow.value.copy(
+                answered = stateFlow.value.answered?.copy(
+                    wrongBannerText = wrongBanner,
+                    countBannerText = countBanner,
+                ),
+            )
+        }
     }
 
     private fun answer(selectedIndices: List<Int>) {
@@ -216,6 +290,8 @@ class QuizViewModel(private val mode: QuizMode, private val bankId: String) : Vi
         val sq = s.questions.getOrNull(cursor) ?: return
         val q = sq.entity
         val currentIndex = if (mode == QuizMode.SINGLE) q.orderIndex + 1 else cursor + 1
+        // recall 题：recallJson 解析出弱提示标签、题图本地路径与揭示层数据
+        val recallData = parseRecall(q.recallJson)
         stateFlow.value = QuizUiState(
             mode = mode,
             title = s.title,
@@ -231,6 +307,20 @@ class QuizViewModel(private val mode: QuizMode, private val bankId: String) : Vi
                 type = mapType(q.type),
                 isFavorite = q.id in favoriteIds,
                 sourceBankName = if (mode == QuizMode.MIX) sq.bankName else null,
+                tags = recallData?.tags ?: emptyList(),
+                images = recallData?.images?.map {
+                    recallImageFile(ServiceLocator.appContext().filesDir, q.bankId, it).absolutePath
+                } ?: emptyList(),
+                recall = recallData?.let {
+                    RecallUi(
+                        strategy = it.strategy,
+                        steps = it.steps,
+                        timeCx = it.timeCx,
+                        spaceCx = it.spaceCx,
+                        pseudocode = it.pseudocode,
+                        code = it.code,
+                    )
+                },
             ),
             answered = null,
             selectedIndices = emptyList(),

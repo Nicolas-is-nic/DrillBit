@@ -58,6 +58,23 @@ class ServerApi {
             parseBank(body)
         }
 
+    /** 拉取题图字节（recall 题型，GET /api/img/{bankId}/{filename}，双轨鉴权） */
+    suspend fun fetchImage(serverUrl: String, token: String, bankId: String, filename: String): ByteArray =
+        withContext(Dispatchers.IO) {
+            val request = Request.Builder()
+                .url("$serverUrl/api/img/$bankId/$filename")
+                .header("Authorization", "Bearer $token")
+                .get()
+                .build()
+            client.newCall(request).execute().use { resp ->
+                if (!resp.isSuccessful) {
+                    val text = resp.body?.string().orEmpty()
+                    throw IOException("题图下载失败 ${resp.code}：${reasonFrom(text, resp.code)}")
+                }
+                resp.body?.bytes() ?: throw IOException("题图响应体为空")
+            }
+        }
+
     /** POST JSON 并返回响应体文本 */
     suspend fun postJson(url: String, token: String, jsonBody: String): String =
         withContext(Dispatchers.IO) {

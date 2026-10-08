@@ -54,6 +54,8 @@ data class QuestionEntity(
     val explanation: String,
     /** 抽题权重 1-5，默认 1，越大越容易被抽中 */
     val weight: Int,
+    /** 仅 recall 题：揭示层数据整包 JSON，其余题型 null（v3 迁移新增列） */
+    val recallJson: String? = null,
 )
 
 /**

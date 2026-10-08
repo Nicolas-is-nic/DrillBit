@@ -20,7 +20,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         DeletedQuestionEntity::class,
         FavoriteEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = false,
 )
 abstract class DrillBitDatabase : RoomDatabase() {
@@ -48,6 +48,12 @@ abstract class DrillBitDatabase : RoomDatabase() {
                 )
             }
         }
+        /** v3（recall 批次）：questions 增 recallJson 列（可空，recall 题存揭示数据整包 JSON） */
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `questions` ADD COLUMN `recallJson` TEXT")
+            }
+        }
         @Volatile
         private var instance: DrillBitDatabase? = null
 
@@ -57,7 +63,7 @@ abstract class DrillBitDatabase : RoomDatabase() {
                     context.applicationContext,
                     DrillBitDatabase::class.java,
                     "drillbit.db",
-                ).addMigrations(MIGRATION_1_2).build().also { instance = it }
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3).build().also { instance = it }
             }
     }
 }

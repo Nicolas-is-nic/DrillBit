@@ -8,6 +8,7 @@ import com.drillbit.data.db.QuestionEntity
 import com.drillbit.data.net.LlmMessage
 import com.drillbit.data.parseAnswers
 import com.drillbit.data.parseOptions
+import com.drillbit.data.parseRecall
 import com.drillbit.data.repo.NoteRepository
 import com.drillbit.ui.components.BannerType
 import com.drillbit.ui.components.BannerUi
@@ -38,10 +39,6 @@ class ChatViewModel(private val questionId: String) : ViewModel() {
     /** 历史携带上限（轮）：一轮 = user + assistant */
     private val historyMaxRounds = 6
 
-    // ===== 临时诊断（v19）：定位保存按钮失效后随调试面板一起删除 =====
-    private var saveClickCount = 0
-    private var lastOpenSaveResult = "未触发"
-
     private val stateFlow = MutableStateFlow(
         ChatUiState(
             modelName = "未配置",
@@ -51,7 +48,6 @@ class ChatViewModel(private val questionId: String) : ViewModel() {
             sending = false,
             errorBannerText = null,
             saveDialog = null,
-            debugText = "",
         ),
     )
     val state: StateFlow<ChatUiState> = stateFlow.asStateFlow()
@@ -74,8 +70,13 @@ class ChatViewModel(private val questionId: String) : ViewModel() {
                 if (q != null) {
                     question = q
                     bankName = ServiceLocator.bankRepository.getBank(q.bankId)?.name ?: ""
-                    val optionCount = parseOptions(q.optionsJson).size
-                    summary = "题干 + $optionCount 个选项 + 解析（来自 $bankName · 第 ${q.orderIndex + 1} 题）"
+                    summary = if (q.type == "recall") {
+                        val recall = parseRecall(q.recallJson)
+                        "题干 + 思路${if (recall != null) "（${recall.strategy}）" else ""}（来自 $bankName · 第 ${q.orderIndex + 1} 题）"
+                    } else {
+                        val optionCount = parseOptions(q.optionsJson).size
+                        "题干 + $optionCount 个选项 + 解析（来自 $bankName · 第 ${q.orderIndex + 1} 题）"
+                    }
                 }
             }
             stateFlow.value = stateFlow.value.copy(
@@ -89,11 +90,7 @@ class ChatViewModel(private val questionId: String) : ViewModel() {
         when (event) {
             is ChatEvent.InputChange -> stateFlow.value = stateFlow.value.copy(input = event.text)
             ChatEvent.Send -> send()
-            is ChatEvent.SaveClick -> {
-                saveClickCount++            // 临时诊断（v19）
-                openSaveDialog(event.messageId)
-                refreshDebug()               // 临时诊断（v19）
-            }
+            is ChatEvent.SaveClick -> openSaveDialog(event.messageId)
             is ChatEvent.SaveConfirm -> saveNote(event.title, event.content)
             ChatEvent.SaveCancel -> stateFlow.value = stateFlow.value.copy(saveDialog = null)
             else -> Unit // Back 由导航层处理
@@ -131,7 +128,6 @@ class ChatViewModel(private val questionId: String) : ViewModel() {
                 // 正常完成：去掉 streaming 态，有内容则显示保存入口
                 updateLastAi { msg -> msg.copy(streaming = false, showSave = msg.text.isNotEmpty()) }
                 stateFlow.value = stateFlow.value.copy(sending = false)
-                refreshDebug()   // 临时诊断（v19）
             }
         }
     }
@@ -142,6 +138,24 @@ class ChatViewModel(private val questionId: String) : ViewModel() {
             "回答准确、条理清晰，先直接回答问题，再补充必要的背景与关联知识。" +
             "默认控制篇幅、简洁作答（一般不超过 200 字）；仅当用户明确要求详细讲解时才展开。"
         val q = question ?: return base
+        // recall 题：题干 + 弱提示 + 思路（策略/步骤/复杂度）+ 代码，替代选项与答案上下文
+        if (q.type == "recall") {
+            val recall = parseRecall(q.recallJson)
+            return buildString {
+                append(base).append("\n\n【当前题目（回忆卡）】\n")
+                append("题干：").append(q.stem).append('\n')
+                recall?.let { r ->
+                    if (r.tags.isNotEmpty()) append("提示标签：").append(r.tags.joinToString("、")).append('\n')
+                    append("参考思路：").append(r.strategy).append('\n')
+                    r.steps.forEachIndexed { i, s -> append("步骤").append(i + 1).append("：").append(s).append('\n') }
+                    if (r.timeCx.isNotBlank() || r.spaceCx.isNotBlank()) {
+                        append("复杂度：时间 ").append(r.timeCx).append(" · 空间 ").append(r.spaceCx).append('\n')
+                    }
+                    r.code?.let { append("参考代码（Python）：\n").append(it).append('\n') }
+                    r.pseudocode?.let { append("伪代码：\n").append(it) }
+                }
+            }
+        }
         val options = parseOptions(q.optionsJson)
         val answers = parseAnswers(q.answersJson).distinct().filter { it in options.indices }
         // 判断题用选项文本更自然（如「对」）；其余题型用字母拼接（如「ACD」）
@@ -211,22 +225,15 @@ class ChatViewModel(private val questionId: String) : ViewModel() {
             sending = false,
             errorBannerText = reason,
         )
-        refreshDebug()   // 临时诊断（v19）
     }
 
     /** 打开保存弹窗：按消息 id 取该条 AI 回复，标题取它之前最近一条 ME 消息 */
     private fun openSaveDialog(messageId: Long) {
         val messages = stateFlow.value.messages
         val aiIndex = messages.indexOfLast { it.id == messageId && it.role == ChatRole.AI }
-        if (aiIndex < 0) {
-            lastOpenSaveResult = "未找到消息"   // 临时诊断（v19）
-            return
-        }
+        if (aiIndex < 0) return
         val ai = messages[aiIndex]
-        if (ai.text.isEmpty()) {
-            lastOpenSaveResult = "空文本"       // 临时诊断（v19）
-            return
-        }
+        if (ai.text.isEmpty()) return
         val meText = messages.subList(0, aiIndex).lastOrNull { it.role == ChatRole.ME }?.text.orEmpty()
         val titleSource = meText.ifBlank { question?.stem.orEmpty() }
         val sourceLine = if (question != null) {
@@ -234,7 +241,6 @@ class ChatViewModel(private val questionId: String) : ViewModel() {
         } else {
             ""
         }
-        lastOpenSaveResult = "正常"             // 临时诊断（v19）
         stateFlow.value = stateFlow.value.copy(
             saveDialog = SaveNoteDialogState(
                 title = if (titleSource.length > 20) titleSource.take(20) else titleSource.ifBlank { "AI 回答笔记" },
@@ -254,18 +260,7 @@ class ChatViewModel(private val questionId: String) : ViewModel() {
                 bankName = bankName.ifBlank { null },
             )
             stateFlow.value = stateFlow.value.copy(saveDialog = null)
-            refreshDebug()   // 临时诊断（v19）
         }
-    }
-
-    /** 临时诊断（v19）：汇总保存链路关键状态，定位保存按钮失效后删除 */
-    private fun refreshDebug() {
-        val messages = stateFlow.value.messages
-        val lastAi = messages.lastOrNull { it.role == ChatRole.AI }
-        val dialogOpen = if (stateFlow.value.saveDialog != null) "开" else "关"
-        stateFlow.value = stateFlow.value.copy(
-            debugText = "点击到达=$saveClickCount 弹窗=$dialogOpen 早退=$lastOpenSaveResult 末条长度=${lastAi?.text?.length ?: -1}",
-        )
     }
 
     class Factory(private val questionId: String) : ViewModelProvider.Factory {

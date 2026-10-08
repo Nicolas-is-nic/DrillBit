@@ -2,7 +2,7 @@
 <resources>
     <string name="app_name">DrillBit</string>
     <string name="tab_banks">题库</string>
-    <string name="tab_wrong">错题</string>
+    <string name="tab_wrong">复习</string>
     <string name="tab_notes">笔记</string>
     <string name="tab_settings">设置</string>
 </resources>

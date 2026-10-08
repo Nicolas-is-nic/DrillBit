@@ -79,6 +79,9 @@ import com.drillbit.ui.settings.ServerConfigEvent
 import com.drillbit.ui.settings.ServerConfigScreen
 import com.drillbit.ui.settings.ServerConfigViewModel
 
+import com.drillbit.ui.settings.AccountEvent
+import com.drillbit.ui.settings.AccountScreen
+import com.drillbit.ui.settings.AccountViewModel
 import com.drillbit.ui.settings.SettingsEvent
 import com.drillbit.ui.settings.SettingsScreen
 import com.drillbit.ui.settings.SettingsViewModel
@@ -276,11 +279,7 @@ fun DrillBitApp(
                             SettingsEvent.BackupClick -> navController.navigate("backup")
                             SettingsEvent.CrashLogClick -> onShowCrashLog()
                             SettingsEvent.CheckUpdate -> vm.onEvent(event)
-                            is SettingsEvent.AccountLogin,
-                            SettingsEvent.AccountLogout,
-                            SettingsEvent.SyncNow,
-                            SettingsEvent.SyncOverwriteConfirm,
-                            SettingsEvent.SyncOverwriteCancel -> vm.onEvent(event)
+                            SettingsEvent.AccountClick -> navController.navigate("account")
                         }
                     },
                 )
@@ -407,6 +406,20 @@ fun DrillBitApp(
                         when (event) {
                             DigestEvent.Back -> navController.popBackStack()
                             else -> vm.onEvent(event)
+                        }
+                    },
+                )
+            }
+            composable("account") {
+                val vm: AccountViewModel = viewModel()
+                val state by vm.state.collectAsState()
+                AccountScreen(
+                    state = state,
+                    onEvent = { event ->
+                        if (event is AccountEvent.Back) {
+                            navController.popBackStack()
+                        } else {
+                            vm.onEvent(event)
                         }
                     },
                 )

@@ -3,6 +3,7 @@
 # 接口：
 #   GET  /api/index          题库目录（双轨鉴权：账号 token 或静态 token）
 #   GET  /api/banks/{bank_id} 题库全量 JSON（双轨鉴权）
+#   GET  /api/img/{bank_id}/{filename} 题图文件（recall 题型，双轨鉴权）
 #   POST /api/notes           笔记全量备份，过渡期保留（双轨鉴权）
 #   POST /api/auth/login      账号登录，返回 token（仅账号 token 用于 sync 三端点）
 #   POST /api/sync/upload     云同步上传：全量快照覆盖（仅账号 token）
@@ -33,7 +34,7 @@ import time
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 
 app = FastAPI(title="DrillBit Server")
 BANKS_DIR = Path(__file__).parent / "banks"
@@ -186,6 +187,16 @@ async def api_index(_: None = Depends(check_token_dual)) -> JSONResponse:
 @app.get("/api/banks/{bank_id}")
 async def api_bank(bank_id: str, _: None = Depends(check_token_dual)) -> JSONResponse:
     return JSONResponse(load_bank(bank_id))
+
+
+@app.get("/api/img/{bank_id}/{filename}")
+async def api_img(bank_id: str, filename: str, _: None = Depends(check_token_dual)) -> FileResponse:
+    """题图（recall 题型）：banks/img/{bank_id}/{filename}；resolve 后校验仍在图片目录内，防目录穿越"""
+    base = (BANKS_DIR / "img" / bank_id).resolve()
+    path = (base / filename).resolve()
+    if base not in path.parents or not path.is_file():
+        raise HTTPException(status_code=404, detail="题图不存在")
+    return FileResponse(path)
 
 
 @app.post("/api/notes")

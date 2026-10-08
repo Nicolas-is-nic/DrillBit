@@ -4,10 +4,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
-import androidx.compose.material.icons.filled.Cancel
+import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.Reorder
 import androidx.compose.material.icons.filled.Tune
-import androidx.compose.material.icons.outlined.Cancel
+import androidx.compose.material.icons.outlined.Replay
 import androidx.compose.material.icons.outlined.Reorder
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.HorizontalDivider
@@ -43,8 +43,8 @@ val dbTabs = listOf(
     DbTabItem(
         route = "wrong",
         labelRes = R.string.tab_wrong,
-        selectedIcon = Icons.Filled.Cancel,
-        unselectedIcon = Icons.Outlined.Cancel,
+        selectedIcon = Icons.Filled.Replay,
+        unselectedIcon = Icons.Outlined.Replay,
     ),
     DbTabItem(
         route = "notes",

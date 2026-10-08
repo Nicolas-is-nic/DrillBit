@@ -10,12 +10,14 @@ import com.drillbit.data.db.DrillBitDatabase
 import com.drillbit.data.db.ProgressEntity
 import com.drillbit.data.db.QuestionEntity
 import com.drillbit.data.net.ServerApi
+import com.drillbit.ServiceLocator
 import com.drillbit.data.toJsonText
 import com.drillbit.data.toIntJsonText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
+import java.io.File
 import java.io.IOException
 
 /**
@@ -61,19 +63,24 @@ class BankRepository(
             }
         }
 
-    /** 下载并替换指定题库（事务内：删旧题目 → 插新 → 更新元信息 → 断点重置为 0） */
+    /** 下载并替换指定题库（事务内：删旧题目 → 插新 → 更新元信息 → 断点重置为 0）。
+     *  recall 题图随库一并下载到本地（离线可刷）；单张失败不阻塞题库更新，UI 显示未下载占位。
+     */
     suspend fun downloadAndReplace(settings: DbSettings, bankId: String): Unit =
         withContext(Dispatchers.IO) {
             val payload = api.fetchBank(settings.serverUrl, settings.serverToken, bankId)
+            downloadImages(settings, payload)
             replaceInTransaction(payload)
+            cleanupStaleImages(payload.id, payload.questions.flatMap { it.images })
         }
 
-    /** 删除本地题库：banks 级联删 questions/wrong；progress 无外键手动删 */
+    /** 删除本地题库：banks 级联删 questions/wrong；progress 无外键手动删；题图目录连带删除 */
     suspend fun deleteBank(bankId: String): Unit = withContext(Dispatchers.IO) {
         db.withTransaction {
             db.progressDao().deleteByBank(bankId)
             db.bankDao().deleteById(bankId)
         }
+        imgDir(bankId).deleteRecursively()
     }
 
     /**
@@ -89,7 +96,9 @@ class BankRepository(
             val payload = com.drillbit.data.parseBank(payloadText)
             val ours = db.bankDao().getById(payload.id)
             if (ours == null || ours.version < payload.version) {
+                copyAssetImages(context, payload)
                 replaceInTransaction(payload)
+                cleanupStaleImages(payload.id, payload.questions.flatMap { it.images })
                 imported++
             }
         }
@@ -123,12 +132,60 @@ class BankRepository(
                         answersJson = q.answers.toIntJsonText(),
                         explanation = q.explanation,
                         weight = q.weight,
+                        recallJson = q.recallJson,
                     )
                 },
             )
             // 已拍板：题库更新后断点直接重置，从头刷
             db.progressDao().deleteByBank(payload.id)
         }
+    }
+
+    // ===== 题图本地管理（recall 批次）：filesDir/img/{bankId}/，文件名取相对路径 basename =====
+
+    /** 题库图片目录 */
+    private fun imgDir(bankId: String): File =
+        File(File(ServiceLocator.appContext().filesDir, "img"), bankId)
+
+    /** 从服务器下载该库全部题图（逐张 best-effort：失败跳过不阻塞，重试依赖该库 version 再加一） */
+    private suspend fun downloadImages(settings: DbSettings, payload: BankPayload) {
+        val dir = imgDir(payload.id).apply { mkdirs() }
+        payload.questions.flatMap { it.images }
+            .map { it.substringAfterLast('/') }
+            .distinct()
+            .forEach { filename ->
+                runCatching {
+                    val bytes = api.fetchImage(settings.serverUrl, settings.serverToken, payload.id, filename)
+                    val tmp = File(dir, "$filename.tmp")
+                    tmp.writeBytes(bytes)
+                    tmp.renameTo(File(dir, filename))
+                }
+            }
+    }
+
+    /** 从 assets 复制测试库题图（开发期路径，与下载路径产物一致） */
+    private fun copyAssetImages(context: android.content.Context, payload: BankPayload) {
+        val dir = imgDir(payload.id).apply { mkdirs() }
+        payload.questions.flatMap { it.images }
+            .map { it.substringAfterLast('/') }
+            .distinct()
+            .forEach { filename ->
+                runCatching {
+                    val tmp = File(dir, "$filename.tmp")
+                    context.assets.open("test_banks/img/${payload.id}/$filename").use { input ->
+                        tmp.outputStream().use { output -> input.copyTo(output) }
+                    }
+                    tmp.renameTo(File(dir, filename))
+                }
+            }
+    }
+
+    /** 清理该库目录下已不被引用的旧图（题库全量替换后调用） */
+    private fun cleanupStaleImages(bankId: String, keepRelatives: List<String>) {
+        val dir = imgDir(bankId)
+        if (!dir.exists()) return
+        val keep = keepRelatives.map { it.substringAfterLast('/') }.toSet()
+        dir.listFiles()?.forEach { f -> if (f.name !in keep) f.delete() }
     }
 
     companion object {

@@ -20,9 +20,10 @@ import com.drillbit.ui.theme.dbColors
 
 /**
  * 按钮类型：
- * PRIMARY 主色实心；GHOST 主色描边透明底；OFF 禁用态灰底；WARN 危险操作实心。
+ * PRIMARY 主色实心；GHOST 主色描边透明底；OFF 禁用态灰底；WARN 危险操作实心；
+ * OK 成功实心（recall 自评「记住了」）；DANGER 失败描边（recall 自评「没记住」，badBg 底 bad 描边字）。
  */
-enum class DBButtonType { PRIMARY, GHOST, OFF, WARN }
+enum class DBButtonType { PRIMARY, GHOST, OFF, WARN, OK, DANGER }
 
 /**
  * 通用按钮（高度 44dp，圆角 10dp）。
@@ -46,18 +47,29 @@ fun DBButton(
         DBButtonType.WARN -> colors.bad
         DBButtonType.OFF -> colors.off
         DBButtonType.GHOST -> Color.Transparent
+        DBButtonType.OK -> colors.ok
+        DBButtonType.DANGER -> colors.badBg
     }
     val foreground = when (effectiveType) {
-        DBButtonType.PRIMARY -> colors.onPrimary
+        DBButtonType.PRIMARY, DBButtonType.OK -> colors.onPrimary
         DBButtonType.WARN, DBButtonType.OFF -> colors.card
         DBButtonType.GHOST -> colors.primary
+        DBButtonType.DANGER -> colors.bad
     }
     Box(
         modifier = modifier
             .height(heightDp)
             .clip(shape)
             .background(background)
-            .then(if (effectiveType == DBButtonType.GHOST) Modifier.border(1.dp, colors.primary, shape) else Modifier)
+            .then(
+            if (effectiveType == DBButtonType.GHOST) {
+                Modifier.border(1.dp, colors.primary, shape)
+            } else if (effectiveType == DBButtonType.DANGER) {
+                Modifier.border(1.dp, colors.bad, shape)
+            } else {
+                Modifier
+            }
+        )
             .clickable(enabled = enabled, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {

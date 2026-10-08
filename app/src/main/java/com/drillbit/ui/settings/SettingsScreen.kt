@@ -1,67 +1,36 @@
 package com.drillbit.ui.settings
 
-import android.Manifest
-import android.app.Activity
-import android.content.pm.PackageManager
-import android.os.Build
-import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.drillbit.spike.SpikeTest
-import com.drillbit.ui.components.DBButton
-import com.drillbit.ui.components.DBButtonType
-import com.drillbit.ui.components.DBTextField
 import com.drillbit.ui.components.DbTopBar
-import com.drillbit.ui.components.ScrimModal
 import com.drillbit.ui.components.SettingRow
 import com.drillbit.ui.components.SettingSwitchRow
 import com.drillbit.ui.theme.DrillBitTheme
 import com.drillbit.ui.theme.dbColors
 
 /**
- * P16 设置（Tab4）：分组顺序为 外观 / 服务器与题库 / AI 模型 / 笔记 / 关于。
+ * P16 设置（Tab4）：分组顺序为 外观 / 服务器与题库 / 账号与同步（入口行）/ AI 模型 / 笔记 / 关于。
  *
  * 深色模式开关是一键切换整套配色的入口；版本号为只读行（无箭头）。
+ * 账号与同步已拆为独立二级页（2026-10-08），本页仅保留入口行。
  */
 @Composable
 fun SettingsScreen(state: SettingsUiState, onEvent: (SettingsEvent) -> Unit) {
     val colors = dbColors()
-    // ===== S0 验证（临时）：F3 通知 / F4-L2 钉屏真机验证入口，定案后删除 =====
-    val context = LocalContext.current
-    var pinned by remember { mutableStateOf(false) }
-    val notifPermission = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission(),
-    ) { granted ->
-        if (granted) {
-            SpikeTest.scheduleNotification(context)
-            Toast.makeText(context, "已预约：5 分钟后弹通知，现在去杀掉 App", Toast.LENGTH_LONG).show()
-        } else {
-            Toast.makeText(context, "通知权限被拒：这本身也是测试结果，F3 需重新评估", Toast.LENGTH_LONG).show()
-        }
-    }
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
             DbTopBar(title = "设置")
@@ -95,6 +64,12 @@ fun SettingsScreen(state: SettingsUiState, onEvent: (SettingsEvent) -> Unit) {
                     valueText = state.updateAvailableText ?: "已是最新",
                     onClick = { onEvent(SettingsEvent.CheckUpdate) },
                 )
+                SectionTitle(text = "账号与同步")
+                SettingRow(
+                    title = "账号与同步",
+                    valueText = state.accountText,
+                    onClick = { onEvent(SettingsEvent.AccountClick) },
+                )
                 SectionTitle(text = "AI 模型")
                 SettingRow(
                     title = "模型配置",
@@ -107,51 +82,6 @@ fun SettingsScreen(state: SettingsUiState, onEvent: (SettingsEvent) -> Unit) {
                     valueText = state.lastBackupText,
                     onClick = { onEvent(SettingsEvent.BackupClick) },
                 )
-                SectionTitle(text = "账号与同步")
-                if (state.accountUser == null) {
-                    // 登录表单（输入态留在页面本地，不进契约 7.11）
-                    var username by remember { mutableStateOf("") }
-                    var password by remember { mutableStateOf("") }
-                    DBTextField(label = "用户名", value = username, onChange = { username = it })
-                    DBTextField(
-                        label = "密码",
-                        value = password,
-                        onChange = { password = it },
-                        password = true,
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    DBButton(
-                        text = if (state.syncBusy) "登录中…" else "登录",
-                        onClick = { onEvent(SettingsEvent.AccountLogin(username, password)) },
-                        modifier = Modifier.fillMaxWidth(),
-                        type = if (username.isBlank() || password.isBlank() || state.syncBusy) {
-                            DBButtonType.OFF
-                        } else {
-                            DBButtonType.PRIMARY
-                        },
-                    )
-                } else {
-                    SettingRow(title = "当前账号", valueText = state.accountUser)
-                    SettingRow(
-                        title = "立即同步",
-                        valueText = if (state.syncBusy) "同步中…" else "上传并下载",
-                        onClick = { if (!state.syncBusy) onEvent(SettingsEvent.SyncNow) },
-                    )
-                    SettingRow(title = "上次同步", valueText = state.lastSyncText)
-                    SettingRow(
-                        title = "登出账号",
-                        valueText = "云端数据保留",
-                        onClick = { onEvent(SettingsEvent.AccountLogout) },
-                    )
-                }
-                state.syncResultText?.let { result ->
-                    Text(
-                        text = result,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = colors.text2,
-                        modifier = Modifier.padding(top = 6.dp, bottom = 4.dp),
-                    )
-                }
                 SectionTitle(text = "关于")
                 SettingRow(
                     title = "版本",
@@ -162,89 +92,8 @@ fun SettingsScreen(state: SettingsUiState, onEvent: (SettingsEvent) -> Unit) {
                     valueText = if (state.hasCrashLog) "有" else "无",
                     onClick = { onEvent(SettingsEvent.CrashLogClick) },
                 )
-                SectionTitle(text = "S0 验证（临时）")
-                SettingRow(
-                    title = "立即通知测试",
-                    valueText = "验证通知通道",
-                    onClick = {
-                        SpikeTest.postNotification(context)
-                        Toast.makeText(context, "已发出：退到后台后下拉状态栏查看", Toast.LENGTH_LONG).show()
-                    },
-                )
-                SettingRow(
-                    title = "短时通知测试",
-                    valueText = "2 分钟后 · 不杀 App",
-                    onClick = {
-                        SpikeTest.scheduleNotification(context, 2 * 60 * 1000)
-                        Toast.makeText(context, "已预约 2 分钟：退到后台等待，不要杀掉 App", Toast.LENGTH_LONG).show()
-                    },
-                )
-                SettingRow(
-                    title = "定时通知测试",
-                    valueText = "预约 5 分钟后通知",
-                    onClick = {
-                        val granted = Build.VERSION.SDK_INT < 33 ||
-                            context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) ==
-                            PackageManager.PERMISSION_GRANTED
-                        if (granted) {
-                            SpikeTest.scheduleNotification(context)
-                            Toast.makeText(context, "已预约：5 分钟后弹通知，现在去杀掉 App", Toast.LENGTH_LONG).show()
-                        } else {
-                            notifPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
-                        }
-                    },
-                )
-                SettingRow(
-                    title = "钉屏测试",
-                    valueText = if (pinned) "已钉屏，点击解除" else "点击进入钉屏",
-                    onClick = {
-                        val activity = context as? Activity
-                        if (activity != null) {
-                            pinned = SpikeTest.togglePin(activity, pinned)
-                        }
-                    },
-                )
                 Spacer(Modifier.height(16.dp))
             }
-        }
-        // 覆盖警告（B6）：云端存在其他设备推送的更新快照，确认后先上传再下载
-        if (state.confirmOverwrite) {
-            OverwriteConfirmDialog(onEvent = onEvent)
-        }
-    }
-}
-
-/** 覆盖警告弹窗（B6）：继续同步将先上传本机数据覆盖云端那份新快照 */
-@Composable
-private fun OverwriteConfirmDialog(onEvent: (SettingsEvent) -> Unit) {
-    val colors = dbColors()
-    ScrimModal {
-        Text(
-            text = "云端有新快照",
-            style = MaterialTheme.typography.titleMedium,
-            color = colors.text,
-        )
-        Spacer(Modifier.height(8.dp))
-        Text(
-            text = "云端存在其他设备上传的更新快照。继续同步将先上传本机数据（覆盖云端那份），确定？",
-            style = MaterialTheme.typography.labelMedium,
-            color = colors.text2,
-        )
-        Spacer(Modifier.height(12.dp))
-        Row(modifier = Modifier.fillMaxWidth()) {
-            DBButton(
-                text = "取消",
-                onClick = { onEvent(SettingsEvent.SyncOverwriteCancel) },
-                modifier = Modifier.weight(1f),
-                type = DBButtonType.GHOST,
-            )
-            Spacer(Modifier.width(9.dp))
-            DBButton(
-                text = "继续同步",
-                onClick = { onEvent(SettingsEvent.SyncOverwriteConfirm) },
-                modifier = Modifier.weight(1f),
-                type = DBButtonType.WARN,
-            )
         }
     }
 }
@@ -268,13 +117,9 @@ private fun previewState() = SettingsUiState(
     updateAvailableText = "2 个有新版本",
     modelSummary = "gpt-4o-mini · OpenAI 兼容",
     lastBackupText = "09-28 21:10",
-    versionText = "v0.1.0（1）",
+    accountText = "yang",
+    versionText = "v0.1.0（27）",
     hasCrashLog = false,
-    accountUser = "yang",
-    lastSyncText = "10-07 20:11 · 安卓",
-    syncBusy = false,
-    syncResultText = null,
-    confirmOverwrite = false,
 )
 
 /** 预览假数据：全部未配置（首次安装） */
@@ -284,13 +129,9 @@ private fun previewFreshState() = SettingsUiState(
     updateAvailableText = null,
     modelSummary = "未配置",
     lastBackupText = "--",
-    versionText = "v0.1.0（1）",
+    accountText = "未登录",
+    versionText = "v0.1.0（27）",
     hasCrashLog = true,
-    accountUser = null,
-    lastSyncText = "未同步",
-    syncBusy = false,
-    syncResultText = null,
-    confirmOverwrite = false,
 )
 
 @Preview(name = "设置 · 亮色", widthDp = 360, heightDp = 780)

@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -19,18 +18,11 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.pointer.PointerEventPass
-import androidx.compose.ui.input.pointer.changedToDown
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -39,7 +31,6 @@ import androidx.compose.ui.unit.sp
 import com.drillbit.ui.components.Banner
 import com.drillbit.ui.components.BannerType
 import com.drillbit.ui.components.ChatBubble
-import com.drillbit.ui.components.ChatDebugProbe
 import com.drillbit.ui.components.ChatRole
 import com.drillbit.ui.components.DBButton
 import com.drillbit.ui.components.DBButtonType
@@ -49,7 +40,6 @@ import com.drillbit.ui.components.DbTopBarInfo
 import com.drillbit.ui.components.ScrimModal
 import com.drillbit.ui.theme.DrillBitTheme
 import com.drillbit.ui.theme.dbColors
-import kotlinx.coroutines.delay
 
 /**
  * P10 / P11 AI 问答：从题目进入时自动带入题干、选项、解析作为上下文，
@@ -58,63 +48,14 @@ import kotlinx.coroutines.delay
 @Composable
 fun ChatScreen(state: ChatUiState, onEvent: (ChatEvent) -> Unit) {
     val colors = dbColors()
-    // 临时诊断（v19/v20）：记录全页最近一次按下坐标与落点归属（Initial pass 仅观察，不消费事件），定位后删除
-    var lastDown by remember { mutableStateOf("") }
-    // 临时诊断（v20）：根 Box 在合成树根坐标中的原点，用于把按下坐标与按钮 bounds 对齐
-    var rootOrigin by remember { mutableStateOf(Offset.Zero) }
-    // 临时诊断（v24）：提升滚动状态，便于调试行读取内容高度（maxValue）
     val scrollState = rememberScrollState()
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .onGloballyPositioned { rootOrigin = it.positionInRoot() }   // 临时诊断（v20）：记录根 Box 原点
-            .pointerInput(Unit) {
-                awaitPointerEventScope {
-                    while (true) {
-                        val event = awaitPointerEvent(PointerEventPass.Initial)
-                        val change = event.changes.firstOrNull { it.changedToDown() }
-                        if (change != null) {
-                            ChatDebugProbe.lastDownTarget = ""   // 临时诊断（v20）：先清空，再由子节点探针覆盖
-                            val x = (rootOrigin.x + change.position.x).toInt()
-                            val y = (rootOrigin.y + change.position.y).toInt()
-                            lastDown = "($x,$y)"
-                        }
-                    }
-                }
-            },
-    ) {
+    Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
             DbTopBar(
                 title = "AI 问答",
                 onBack = { onEvent(ChatEvent.Back) },
                 actions = { DbTopBarInfo(text = state.modelName) },
             )
-            // 临时诊断（v19/v20/v24）：保存按钮链路调试行、UI 线程心跳、滚动高度与纯文本对照开关，定位后删除
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 2.dp),
-            ) {
-                Row {
-                    Text(
-                        text = "调试 按下=$lastDown 落点=${ChatDebugProbe.lastDownTarget} 按钮=${ChatDebugProbe.buttonBounds} ${state.debugText}",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = colors.bad,
-                        modifier = Modifier.weight(1f),
-                    )
-                    DBButton(
-                        text = if (ChatDebugProbe.forcePlainText) "纯文本开" else "纯文本关",
-                        onClick = { ChatDebugProbe.forcePlainText = !ChatDebugProbe.forcePlainText },
-                        heightDp = 32.dp,
-                        modifier = Modifier.width(88.dp),
-                    )
-                }
-                Row {
-                    DebugHeartbeatText()
-                    Spacer(Modifier.width(10.dp))
-                    DebugScrollText(scrollState)
-                }
-            }
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -141,7 +82,6 @@ fun ChatScreen(state: ChatUiState, onEvent: (ChatEvent) -> Unit) {
                         modifier = Modifier.padding(bottom = 10.dp),
                         streaming = message.streaming,
                         showSave = message.showSave,
-                        forcePlainText = ChatDebugProbe.forcePlainText,   // 临时诊断（v20）
                         onSave = { onEvent(ChatEvent.SaveClick(message.id)) },
                     )
                 }
@@ -180,33 +120,6 @@ fun ChatScreen(state: ChatUiState, onEvent: (ChatEvent) -> Unit) {
             SaveNoteDialog(dialog = dialog, onEvent = onEvent)
         }
     }
-}
-
-// 临时诊断（v24）：UI 线程心跳。数字停住 = 主线程被大量重组/布局占满，触摸得不到处理；定位后删除
-@Composable
-private fun DebugHeartbeatText() {
-    var beat by remember { mutableStateOf(0L) }
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(200)
-            beat++
-        }
-    }
-    Text(
-        text = "心跳=$beat",
-        style = MaterialTheme.typography.labelSmall,
-        color = dbColors().bad,
-    )
-}
-
-// 临时诊断（v24）：滚动位置/上限（maxValue + 视口高度 = 内容总高像素），用于定位长度阈值；定位后删除
-@Composable
-private fun DebugScrollText(scrollState: ScrollState) {
-    Text(
-        text = "滚动=${scrollState.value}/${scrollState.maxValue}",
-        style = MaterialTheme.typography.labelSmall,
-        color = dbColors().bad,
-    )
 }
 
 /** 上下文说明块：明确告诉用户这次提问带入了哪些内容 */

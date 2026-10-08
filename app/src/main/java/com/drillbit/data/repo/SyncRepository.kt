@@ -60,10 +60,12 @@ class SyncRepository(
         return api.fetchSyncMeta(url, token)
     }
 
-    /** 上传全量快照，返回 uploaded_at */
+    /** 上传全量快照，返回 uploaded_at；成功即记 lastSyncAt（本机与云端最近一次交互时刻，2026-10-08 备份/恢复拆分批次） */
     suspend fun upload(): Long {
         val (url, token) = requireAuth()
-        return api.uploadSnapshot(url, token, DEVICE_NAME, exportSnapshot())
+        val at = api.uploadSnapshot(url, token, DEVICE_NAME, exportSnapshot())
+        store.setLastSyncAt(at)
+        return at
     }
 
     /**

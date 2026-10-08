@@ -6,18 +6,33 @@ package com.drillbit.ui.quiz
  * QuizUiState 增 selectedIndices；QuizEvent 增 ConfirmClick（文档已同步）。
  * 2026-10-06 F1/F2：QuizMode 增 FAVORITE；QuestionUi 增 isFavorite；QuizUiState 增
  * confirmDelete；QuizEvent 增 FavoriteClick/DeleteClick/DeleteConfirm/DeleteCancel（文档已同步）。
+ * 2026-10-08 recall 批次：QuestionType 增 RECALL；QuestionUi 增 tags/images/recall（RecallUi）；
+ * QuizEvent 增 RememberedClick/ForgotClick（文档已同步）。
  */
 
 enum class QuizMode { SINGLE, MIX, RETRY, FAVORITE }
 enum class QuizPhase { ANSWERING, ANSWERED }
-enum class QuestionType { SINGLE, MULTI, JUDGE }
+enum class QuestionType { SINGLE, MULTI, JUDGE, RECALL }
 
 data class QuestionUi(
     val stem: String,
     val options: List<String>,
     val type: QuestionType,         // VM 由题库 type 字符串映射，未识别值按 SINGLE
     val isFavorite: Boolean,        // 当前题收藏态，题干旁星标渲染
-    val sourceBankName: String?     // 仅 MIX 模式非空，展示「来自：xxx」标签
+    val sourceBankName: String? = null, // 仅 MIX 模式非空，展示「来自：xxx」标签
+    val tags: List<String> = emptyList(),      // 仅 RECALL 题非空：弱提示标签（题眼/难度），chip 渲染
+    val images: List<String> = emptyList(),    // 仅 RECALL 题可非空：题图本地文件绝对路径，按序竖排
+    val recall: RecallUi? = null,   // 仅 RECALL 题非空：揭示层数据（ANSWERED 阶段渲染）
+)
+
+/** RECALL 题揭示层数据（2026-10-08 recall 批次新增） */
+data class RecallUi(
+    val strategy: String,           // 策略一句话，主色加粗
+    val steps: List<String>,        // 关键步骤 1-4 条
+    val timeCx: String,             // 时间复杂度短文本
+    val spaceCx: String,            // 空间复杂度短文本
+    val pseudocode: String?,        // 伪代码（可空）
+    val code: String?,              // Python 核心代码（可空）
 )
 
 data class AnsweredUi(
@@ -25,7 +40,7 @@ data class AnsweredUi(
     val correctIndices: List<Int>,  // 正确答案（multi 多元素）
     val isCorrect: Boolean,         // 集合全等才 true（漏选/错选均 false）
     val explanation: String,
-    val wrongBannerText: String?,   // 答错时非空，如「已加入错题集 · 重考计数 3/3」
+    val wrongBannerText: String?,   // 答错时非空，如「已加入错题集 · 重考计数 3/3」；RECALL 题在 ForgotClick 后填充
     val countBannerText: String?,   // 仅 RETRY 模式非空，如「本题重考计数 2/3 · 本次答对后变为 1/3」
 )
 
@@ -50,6 +65,10 @@ sealed interface QuizEvent {
     data object ConfirmClick : QuizEvent
         // 确认作答进入 ANSWERED（所有题型）。无载荷（VM 已持 selectedIndices）；
         // selectedIndices 为空时按钮置 OFF 禁用，VM 兜底忽略该事件
+    data object RememberedClick : QuizEvent
+        // RECALL 自评「记住了」：视为答对（RETRY 模式走减计数路径），直接下一题不出横幅
+    data object ForgotClick : QuizEvent
+        // RECALL 自评「没记住」：视为答错入集（RETRY 模式重置 3），填充 wrongBannerText 后展示「下一题」
     data object Next : QuizEvent
     data object AskAi : QuizEvent
     data object FavoriteClick : QuizEvent   // 星标点击：toggle 收藏当前题（答前答后均可）

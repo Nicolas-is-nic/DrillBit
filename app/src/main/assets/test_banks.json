@@ -3,8 +3,8 @@
     {
       "id": "llm-basics",
       "name": "大模型基础",
-      "version": 2,
-      "updatedAt": "09-30",
+      "version": 3,
+      "updatedAt": "10-08",
       "questions": [
         {
           "id": "q-0001", "type": "single",
@@ -116,6 +116,44 @@
           "options": ["对", "错"],
           "answers": [1],
           "explanation": "温度 0 等价贪心解码，但 GPU 并行浮点求和的顺序差异、批大小变化等因素仍可能带来非确定性，工程上无法保证逐位一致。",
+          "weight": 3
+        },
+        {
+          "id": "q-0015", "type": "recall",
+          "stem": "LC 84 · 柱状图中最大的矩形：给定 n 个非负整数，表示柱状图中各柱的宽度为 1、高度为 heights[i]。求在该柱状图中，能够勾勒出来的矩形的最大面积。",
+          "tags": ["题眼：单调栈", "Hard"],
+          "images": ["img/lc84-hist.png"],
+          "approach": {
+            "strategy": "单调栈（栈内高度递增）",
+            "steps": [
+              "栈存下标，底到顶对应高度严格递增",
+              "当前柱比栈顶矮则弹栈顶结算：高为弹出柱高，宽为 i 减新栈顶再减 1（栈空则宽为 i）",
+              "末尾加高度 0 的哨兵柱，强制清空栈收尾"
+            ],
+            "timeCx": "O(n)",
+            "spaceCx": "O(n)"
+          },
+          "pseudocode": "stack = 空栈\nans = 0\nh 末尾追加高度 0\nfor 每根柱 i:\n    while 栈非空 且 h[栈顶] >= h[i]:\n        t = 弹栈\n        left = 栈空 ? -1 : 新栈顶\n        ans = max(ans, h[t] * (i - left - 1))\n    i 入栈\nreturn ans",
+          "code": "def largestRectangleArea(h):\n    stack, ans = [], 0\n    h.append(0)  # 哨兵：收尾清栈\n    for i, cur in enumerate(h):\n        while stack and h[stack[-1]] >= cur:\n            ht = h[stack.pop()]\n            left = stack[-1] if stack else -1\n            ans = max(ans, ht * (i - left - 1))\n        stack.append(i)\n    return ans",
+          "weight": 5
+        },
+        {
+          "id": "q-0016", "type": "recall",
+          "stem": "LC 704 · 二分查找：给定一个 n 个元素有序的（升序）整型数组 nums 和一个目标值 target，写一个函数搜索 nums 中的 target，如果目标值存在返回下标，否则返回 -1。",
+          "tags": ["题眼：二分查找", "Easy"],
+          "approach": {
+            "strategy": "闭区间经典二分",
+            "steps": [
+              "区间用闭区间，初始化 left=0、right=n-1",
+              "mid 取 left 加 (right 减 left) 除以 2，防大数溢出",
+              "相等即返回 mid；nums[mid] 小于目标则 left=mid+1，大于则 right=mid-1",
+              "left 大于 right 时区间已空，返回 -1"
+            ],
+            "timeCx": "O(log n)",
+            "spaceCx": "O(1)"
+          },
+          "pseudocode": "left, right = 0, n-1\nwhile left <= right:\n    mid = left + (right - left) / 2\n    if nums[mid] == target: return mid\n    if nums[mid] < target: left = mid + 1\n    else: right = mid - 1\nreturn -1",
+          "code": "def search(nums, target):\n    left, right = 0, len(nums) - 1\n    while left <= right:\n        mid = (left + right) // 2\n        if nums[mid] == target:\n            return mid\n        if nums[mid] < target:\n            left = mid + 1\n        else:\n            right = mid - 1\n    return -1",
           "weight": 3
         }
       ]

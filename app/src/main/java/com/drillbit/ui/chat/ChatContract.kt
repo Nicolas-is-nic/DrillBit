@@ -28,7 +28,6 @@ data class ChatUiState(
     val sending: Boolean,
     val errorBannerText: String?,    // 网络失败/流式中断提示
     val saveDialog: SaveNoteDialogState?,
-    val debugText: String = ""       // 临时诊断（v19）：保存按钮失效定位用，定位后删除
 )
 
 sealed interface ChatEvent {

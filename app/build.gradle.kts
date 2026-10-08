@@ -21,7 +21,7 @@ android {
         applicationId = "com.drillbit"
         minSdk = 28
         targetSdk = 35
-        versionCode = 25
+        versionCode = 27
         versionName = "0.1.0"
     }
 
@@ -100,4 +100,6 @@ dependencies {
 
     // Markdown 渲染（AI 回答与归纳稿：列表/代码块/加粗等，纯 Compose 实现）
     implementation(libs.markdown.renderer.m3)
+    // recall 批次：题图加载（本地文件渲染 + 全屏缩放）
+    implementation(libs.coil.compose)
 }
