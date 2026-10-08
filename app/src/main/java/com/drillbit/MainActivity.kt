@@ -107,6 +107,18 @@ class MainActivity : ComponentActivity() {
             LaunchedEffect(Unit) {
                 ServiceLocator.settingsStore.settings.collect { darkTheme = it.darkMode }
             }
+            // 冷启动云同步静默拉取（B5）：已登录且云端快照比本地新才导入，失败静默不打扰
+            LaunchedEffect(Unit) {
+                runCatching {
+                    val s = ServiceLocator.settingsStore.snapshot()
+                    if (s.serverUrl.isNotBlank() && s.authToken.isNotBlank()) {
+                        val meta = ServiceLocator.syncRepository.meta() ?: return@runCatching
+                        if (meta.uploadedAt > s.lastSyncAt) {
+                            ServiceLocator.syncRepository.downloadAndImport()
+                        }
+                    }
+                }
+            }
             val onDarkModeChange: (Boolean) -> Unit = { on ->
                 darkTheme = on
                 lifecycleScope.launch { ServiceLocator.settingsStore.setDarkMode(on) }
@@ -264,6 +276,11 @@ fun DrillBitApp(
                             SettingsEvent.BackupClick -> navController.navigate("backup")
                             SettingsEvent.CrashLogClick -> onShowCrashLog()
                             SettingsEvent.CheckUpdate -> vm.onEvent(event)
+                            is SettingsEvent.AccountLogin,
+                            SettingsEvent.AccountLogout,
+                            SettingsEvent.SyncNow,
+                            SettingsEvent.SyncOverwriteConfirm,
+                            SettingsEvent.SyncOverwriteCancel -> vm.onEvent(event)
                         }
                     },
                 )

@@ -10,11 +10,13 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
@@ -29,7 +31,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.drillbit.spike.SpikeTest
+import com.drillbit.ui.components.DBButton
+import com.drillbit.ui.components.DBButtonType
+import com.drillbit.ui.components.DBTextField
 import com.drillbit.ui.components.DbTopBar
+import com.drillbit.ui.components.ScrimModal
 import com.drillbit.ui.components.SettingRow
 import com.drillbit.ui.components.SettingSwitchRow
 import com.drillbit.ui.theme.DrillBitTheme
@@ -101,6 +107,51 @@ fun SettingsScreen(state: SettingsUiState, onEvent: (SettingsEvent) -> Unit) {
                     valueText = state.lastBackupText,
                     onClick = { onEvent(SettingsEvent.BackupClick) },
                 )
+                SectionTitle(text = "账号与同步")
+                if (state.accountUser == null) {
+                    // 登录表单（输入态留在页面本地，不进契约 7.11）
+                    var username by remember { mutableStateOf("") }
+                    var password by remember { mutableStateOf("") }
+                    DBTextField(label = "用户名", value = username, onChange = { username = it })
+                    DBTextField(
+                        label = "密码",
+                        value = password,
+                        onChange = { password = it },
+                        password = true,
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    DBButton(
+                        text = if (state.syncBusy) "登录中…" else "登录",
+                        onClick = { onEvent(SettingsEvent.AccountLogin(username, password)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        type = if (username.isBlank() || password.isBlank() || state.syncBusy) {
+                            DBButtonType.OFF
+                        } else {
+                            DBButtonType.PRIMARY
+                        },
+                    )
+                } else {
+                    SettingRow(title = "当前账号", valueText = state.accountUser)
+                    SettingRow(
+                        title = "立即同步",
+                        valueText = if (state.syncBusy) "同步中…" else "上传并下载",
+                        onClick = { if (!state.syncBusy) onEvent(SettingsEvent.SyncNow) },
+                    )
+                    SettingRow(title = "上次同步", valueText = state.lastSyncText)
+                    SettingRow(
+                        title = "登出账号",
+                        valueText = "云端数据保留",
+                        onClick = { onEvent(SettingsEvent.AccountLogout) },
+                    )
+                }
+                state.syncResultText?.let { result ->
+                    Text(
+                        text = result,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = colors.text2,
+                        modifier = Modifier.padding(top = 6.dp, bottom = 4.dp),
+                    )
+                }
                 SectionTitle(text = "关于")
                 SettingRow(
                     title = "版本",
@@ -156,6 +207,45 @@ fun SettingsScreen(state: SettingsUiState, onEvent: (SettingsEvent) -> Unit) {
                 Spacer(Modifier.height(16.dp))
             }
         }
+        // 覆盖警告（B6）：云端存在其他设备推送的更新快照，确认后先上传再下载
+        if (state.confirmOverwrite) {
+            OverwriteConfirmDialog(onEvent = onEvent)
+        }
+    }
+}
+
+/** 覆盖警告弹窗（B6）：继续同步将先上传本机数据覆盖云端那份新快照 */
+@Composable
+private fun OverwriteConfirmDialog(onEvent: (SettingsEvent) -> Unit) {
+    val colors = dbColors()
+    ScrimModal {
+        Text(
+            text = "云端有新快照",
+            style = MaterialTheme.typography.titleMedium,
+            color = colors.text,
+        )
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = "云端存在其他设备上传的更新快照。继续同步将先上传本机数据（覆盖云端那份），确定？",
+            style = MaterialTheme.typography.labelMedium,
+            color = colors.text2,
+        )
+        Spacer(Modifier.height(12.dp))
+        Row(modifier = Modifier.fillMaxWidth()) {
+            DBButton(
+                text = "取消",
+                onClick = { onEvent(SettingsEvent.SyncOverwriteCancel) },
+                modifier = Modifier.weight(1f),
+                type = DBButtonType.GHOST,
+            )
+            Spacer(Modifier.width(9.dp))
+            DBButton(
+                text = "继续同步",
+                onClick = { onEvent(SettingsEvent.SyncOverwriteConfirm) },
+                modifier = Modifier.weight(1f),
+                type = DBButtonType.WARN,
+            )
+        }
     }
 }
 
@@ -180,6 +270,11 @@ private fun previewState() = SettingsUiState(
     lastBackupText = "09-28 21:10",
     versionText = "v0.1.0（1）",
     hasCrashLog = false,
+    accountUser = "yang",
+    lastSyncText = "10-07 20:11 · 安卓",
+    syncBusy = false,
+    syncResultText = null,
+    confirmOverwrite = false,
 )
 
 /** 预览假数据：全部未配置（首次安装） */
@@ -191,6 +286,11 @@ private fun previewFreshState() = SettingsUiState(
     lastBackupText = "--",
     versionText = "v0.1.0（1）",
     hasCrashLog = true,
+    accountUser = null,
+    lastSyncText = "未同步",
+    syncBusy = false,
+    syncResultText = null,
+    confirmOverwrite = false,
 )
 
 @Preview(name = "设置 · 亮色", widthDp = 360, heightDp = 780)

@@ -26,6 +26,12 @@ data class DbSettings(
     val llmType: String = "openai",
     val darkMode: Boolean = false,
     val lastBackupAt: Long = 0L,
+    /** 账号登录 token（空=未登录，云同步用） */
+    val authToken: String = "",
+    /** 已登录用户名（null=未登录） */
+    val authUser: String? = null,
+    /** 上次成功下载导入云端快照的时间（毫秒，0=从未同步） */
+    val lastSyncAt: Long = 0L,
 )
 
 /**
@@ -43,6 +49,9 @@ class SettingsStore(private val context: Context) {
         val LLM_TYPE = stringPreferencesKey("llm_type")
         val DARK_MODE = booleanPreferencesKey("dark_mode")
         val LAST_BACKUP_AT = longPreferencesKey("last_backup_at")
+        val AUTH_TOKEN = stringPreferencesKey("auth_token")
+        val AUTH_USER = stringPreferencesKey("auth_user")
+        val LAST_SYNC_AT = longPreferencesKey("last_sync_at")
     }
 
     /** 配置 Flow（UI 订阅用） */
@@ -56,6 +65,9 @@ class SettingsStore(private val context: Context) {
             llmType = p[Keys.LLM_TYPE] ?: "openai",
             darkMode = p[Keys.DARK_MODE] ?: false,
             lastBackupAt = p[Keys.LAST_BACKUP_AT] ?: 0L,
+            authToken = p[Keys.AUTH_TOKEN] ?: "",
+            authUser = p[Keys.AUTH_USER],
+            lastSyncAt = p[Keys.LAST_SYNC_AT] ?: 0L,
         )
     }
 
@@ -84,5 +96,17 @@ class SettingsStore(private val context: Context) {
 
     suspend fun setLastBackupAt(at: Long) {
         context.dataStore.edit { it[Keys.LAST_BACKUP_AT] = at }
+    }
+
+    /** 写入/清除账号凭证（logout 传空串与 null） */
+    suspend fun setAuth(token: String, user: String?) {
+        context.dataStore.edit { p ->
+            if (token.isBlank()) p.remove(Keys.AUTH_TOKEN) else p[Keys.AUTH_TOKEN] = token
+            if (user == null) p.remove(Keys.AUTH_USER) else p[Keys.AUTH_USER] = user
+        }
+    }
+
+    suspend fun setLastSyncAt(at: Long) {
+        context.dataStore.edit { it[Keys.LAST_SYNC_AT] = at }
     }
 }

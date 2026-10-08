@@ -46,6 +46,10 @@ object ServiceLocator {
         com.drillbit.data.repo.FavoriteRepository(database)
     }
 
+    val syncRepository: com.drillbit.data.repo.SyncRepository by lazy {
+        com.drillbit.data.repo.SyncRepository(database, serverApi, settingsStore)
+    }
+
     val llmClient: com.drillbit.data.net.LlmClient by lazy {
         com.drillbit.data.net.LlmClient()
     }

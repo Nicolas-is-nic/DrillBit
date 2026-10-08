@@ -48,10 +48,16 @@ interface ProgressDao {
     suspend fun get(bankId: String): ProgressEntity?
 
     @Query("SELECT * FROM progress")
+    suspend fun getAllOnce(): List<ProgressEntity>
+
+    @Query("SELECT * FROM progress")
     fun observeAll(): Flow<List<ProgressEntity>>
 
     @Query("DELETE FROM progress WHERE bankId = :bankId")
     suspend fun deleteByBank(bankId: String)
+
+    @Query("DELETE FROM progress")
+    suspend fun deleteAll()
 }
 
 @Dao
@@ -67,6 +73,9 @@ interface WrongDao {
 
     @Query("DELETE FROM wrong WHERE questionId = :questionId")
     suspend fun deleteByQuestionId(questionId: String)
+
+    @Query("DELETE FROM wrong")
+    suspend fun deleteAll()
 
     @Query("SELECT COUNT(*) FROM wrong")
     fun observeCount(): Flow<Int>
@@ -91,6 +100,9 @@ interface NoteDao {
 
     @Query("SELECT COUNT(*) FROM notes")
     suspend fun count(): Int
+
+    @Query("DELETE FROM notes")
+    suspend fun deleteAll()
 }
 
 /** 已删题黑名单（F1） */
@@ -102,8 +114,14 @@ interface DeletedQuestionDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(deleted: DeletedQuestionEntity)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(deleted: List<DeletedQuestionEntity>)
+
     @Query("SELECT questionId FROM deleted_questions WHERE bankId = :bankId")
     suspend fun idsByBank(bankId: String): List<String>
+
+    @Query("DELETE FROM deleted_questions")
+    suspend fun deleteAll()
 }
 
 /** 收藏（F2） */
@@ -121,6 +139,12 @@ interface FavoriteDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(favorite: FavoriteEntity)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(favorites: List<FavoriteEntity>)
+
     @Query("DELETE FROM favorites WHERE questionId = :questionId")
     suspend fun deleteByQuestionId(questionId: String)
+
+    @Query("DELETE FROM favorites")
+    suspend fun deleteAll()
 }
