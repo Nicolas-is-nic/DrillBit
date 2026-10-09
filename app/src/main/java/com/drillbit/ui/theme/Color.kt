@@ -38,6 +38,8 @@ data class DbColors(
     val off: Color,
     /** 弹窗遮罩 */
     val scrim: Color,
+    /** 题图容器底色（白底保题图可读，双主题同值；2026-10-09 review F-20 入板） */
+    val imgBg: Color,
 )
 
 /** 亮色色板（暖色书卷） */
@@ -57,6 +59,7 @@ val LightDbColors = DbColors(
     chip = Color(0xFFEFE6D8),
     off = Color(0xFFD8C9B8),
     scrim = Color(0x703E2C20),
+    imgBg = Color(0xFFFFFFFF),
 )
 
 /** 暗色色板（深色护眼） */
@@ -76,6 +79,7 @@ val DarkDbColors = DbColors(
     chip = Color(0xFF262A30),
     off = Color(0xFF3A3F45),
     scrim = Color(0x9E000000),
+    imgBg = Color(0xFFFFFFFF),
 )
 
 /** 当前色板（由 DrillBitTheme 按亮暗注入） */

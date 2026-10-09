@@ -32,6 +32,8 @@ data class DbSettings(
     val authUser: String? = null,
     /** 上次成功下载导入云端快照的时间（毫秒，0=从未同步） */
     val lastSyncAt: Long = 0L,
+    /** 题库页当前分类页签："knowledge" | "algo"（2026-10-09 分类批次） */
+    val banksCategory: String = "knowledge",
 )
 
 /**
@@ -52,6 +54,7 @@ class SettingsStore(private val context: Context) {
         val AUTH_TOKEN = stringPreferencesKey("auth_token")
         val AUTH_USER = stringPreferencesKey("auth_user")
         val LAST_SYNC_AT = longPreferencesKey("last_sync_at")
+        val BANKS_CATEGORY = stringPreferencesKey("banks_category")
     }
 
     /** 配置 Flow（UI 订阅用） */
@@ -68,6 +71,7 @@ class SettingsStore(private val context: Context) {
             authToken = p[Keys.AUTH_TOKEN] ?: "",
             authUser = p[Keys.AUTH_USER],
             lastSyncAt = p[Keys.LAST_SYNC_AT] ?: 0L,
+            banksCategory = p[Keys.BANKS_CATEGORY] ?: "knowledge",
         )
     }
 
@@ -108,5 +112,12 @@ class SettingsStore(private val context: Context) {
 
     suspend fun setLastSyncAt(at: Long) {
         context.dataStore.edit { it[Keys.LAST_SYNC_AT] = at }
+    }
+
+    /** 题库页页签记忆（非法值回落 knowledge） */
+    suspend fun setBanksCategory(category: String) {
+        context.dataStore.edit {
+            it[Keys.BANKS_CATEGORY] = if (category == "algo") "algo" else "knowledge"
+        }
     }
 }

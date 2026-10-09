@@ -1,8 +1,8 @@
 {
   "id": "finetune",
   "name": "预训练与微调对齐",
-  "version": 3,
-  "updatedAt": "09-30",
+  "version": 4,
+  "updatedAt": "10-09",
   "questions": [
     {
       "id": "q-0001",
@@ -1286,5 +1286,7 @@
       "explanation": "洞察是数据并行中每卡冗余存的优化器状态/梯度/参数无需全量复制，分片后显存大降（说反的选项恰好是它解决的问题）；代价是通信量增加，配合 offload 还能再压。",
       "weight": 3
     }
-  ]
+  ],
+  "category": "knowledge",
+  "sortKey": 50
 }

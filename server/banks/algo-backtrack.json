@@ -1,8 +1,8 @@
 {
   "id": "algo-backtrack",
   "name": "算法 · 回溯",
-  "version": 1,
-  "updatedAt": "10-08",
+  "version": 2,
+  "updatedAt": "10-09",
   "questions": [
     {
       "id": "lc0046",
@@ -24,6 +24,50 @@
       },
       "pseudocode": "res = 空列表\npath = 空列表，used = 全假数组\n定义 backtrack():\n    若 len(path) == n: res 追加 path 拷贝; 返回\n    for i in 0..n-1:\n        若 used[i]: 跳过\n        used[i]=真; path 追加 nums[i]\n        backtrack()\n        path 弹尾; used[i]=假\n调用 backtrack()\n返回 res",
       "code": "def permute(nums):\n    n = len(nums); res, path, used = [], [], [False] * n\n    def backtrack():\n        if len(path) == n:\n            res.append(path.copy())  # 收集一份拷贝\n            return\n        for i in range(n):\n            if used[i]:\n                continue  # 已用，跳过\n            used[i] = True; path.append(nums[i])  # 做选择\n            backtrack()\n            path.pop(); used[i] = False  # 撤销选择\n    backtrack()\n    return res",
+      "weight": 4
+    },
+    {
+      "id": "lc0078",
+      "type": "recall",
+      "stem": "LC 78 · 子集：给定一个不含重复元素的整数数组 nums，返回其所有子集（幂集），解集不能包含重复子集，可按任意顺序返回。示例：输入 nums=[1,2,3]，输出 [[],[1],[2],[1,2],[3],[1,3],[2,3],[1,2,3]]（顺序不限）。",
+      "tags": [
+        "P0",
+        "Medium"
+      ],
+      "approach": {
+        "strategy": "回溯：start 控制起点，每个节点即一个子集",
+        "steps": [
+          "每层递归入口先把 path 拷贝进结果（每个节点对应一个子集）",
+          "从 start 遍历到末尾，选 nums[i] 后以 i+1 递归（只向右选，避免重复）",
+          "递归返回后弹出末尾回溯"
+        ],
+        "timeCx": "O(n·2^n)",
+        "spaceCx": "O(n)"
+      },
+      "pseudocode": "backtrack(start):\n    先把 path 拷贝收进 res（每个节点都是子集）\n    for i in start..n-1:\n        path 追加 nums[i]\n        backtrack(i+1)\n        path 弹尾\n从 backtrack(0) 开始\n返回 res",
+      "code": "def subsets(nums):\n    res, path = [], []\n    def backtrack(start):\n        res.append(path.copy())  # 每个节点都是一个子集\n        for i in range(start, len(nums)):\n            path.append(nums[i])  # 做选择\n            backtrack(i + 1)  # 只向右选\n            path.pop()  # 撤销选择\n    backtrack(0)\n    return res",
+      "weight": 4
+    },
+    {
+      "id": "lc0022",
+      "type": "recall",
+      "stem": "LC 22 · 括号生成：给定 n 对括号，生成所有可能且有效的括号组合。示例：输入 n=3，输出 [\"((()))\",\"(()())\",\"(())()\",\"()(())\",\"()()()\"]。",
+      "tags": [
+        "P0",
+        "Medium"
+      ],
+      "approach": {
+        "strategy": "回溯：按左右括号计数逐位拼串",
+        "steps": [
+          "已用左括号 open 小于 n 时可放左括号",
+          "已用右括号 close 小于 open 时才可放右括号，保证前缀合法",
+          "串长达到 2n 时收集连接结果"
+        ],
+        "timeCx": "O(4^n/√n)",
+        "spaceCx": "O(n)"
+      },
+      "pseudocode": "backtrack(open, close):\n    若 len(path) == 2n: 收集 ''.join(path); 返回\n    若 open < n: 放 '(' 递归后撤销\n    若 close < open: 放 ')' 递归后撤销\n从 (0,0) 开始\n返回 res",
+      "code": "def generateParenthesis(n):\n    res, path = [], []\n    def backtrack(open_, close):\n        if len(path) == 2 * n:\n            res.append(''.join(path))  # 收集一个合法组合\n            return\n        if open_ < n:  # 左括号还有余量\n            path.append('('); backtrack(open_ + 1, close); path.pop()\n        if close < open_:  # 右括号不能超过左括号\n            path.append(')'); backtrack(open_, close + 1); path.pop()\n    backtrack(0, 0)\n    return res",
       "weight": 4
     },
     {
@@ -49,28 +93,6 @@
       "weight": 3
     },
     {
-      "id": "lc0078",
-      "type": "recall",
-      "stem": "LC 78 · 子集：给定一个不含重复元素的整数数组 nums，返回其所有子集（幂集），解集不能包含重复子集，可按任意顺序返回。示例：输入 nums=[1,2,3]，输出 [[],[1],[2],[1,2],[3],[1,3],[2,3],[1,2,3]]（顺序不限）。",
-      "tags": [
-        "P0",
-        "Medium"
-      ],
-      "approach": {
-        "strategy": "回溯：start 控制起点，每个节点即一个子集",
-        "steps": [
-          "每层递归入口先把 path 拷贝进结果（每个节点对应一个子集）",
-          "从 start 遍历到末尾，选 nums[i] 后以 i+1 递归（只向右选，避免重复）",
-          "递归返回后弹出末尾回溯"
-        ],
-        "timeCx": "O(n·2^n)",
-        "spaceCx": "O(n)"
-      },
-      "pseudocode": "backtrack(start):\n    先把 path 拷贝收进 res（每个节点都是子集）\n    for i in start..n-1:\n        path 追加 nums[i]\n        backtrack(i+1)\n        path 弹尾\n从 backtrack(0) 开始\n返回 res",
-      "code": "def subsets(nums):\n    res, path = [], []\n    def backtrack(start):\n        res.append(path.copy())  # 每个节点都是一个子集\n        for i in range(start, len(nums)):\n            path.append(nums[i])  # 做选择\n            backtrack(i + 1)  # 只向右选\n            path.pop()  # 撤销选择\n    backtrack(0)\n    return res",
-      "weight": 4
-    },
-    {
       "id": "lc0039",
       "type": "recall",
       "stem": "LC 39 · 组合总和：给定一个无重复元素的正整数数组 candidates 和目标数 target，找出所有使数字和等于 target 的组合；candidates 中同一数字可无限次重复选取，解集不能包含重复组合。示例：输入 candidates=[2,3,6,7]、target=7，输出 [[2,2,3],[7]]。",
@@ -91,28 +113,6 @@
       "pseudocode": "backtrack(start, rest):\n    若 rest == 0: 收集 path 拷贝; 返回\n    for i in start..末尾:\n        若 candidates[i] > rest: 跳过  # 剪枝\n        path 追加 candidates[i]\n        backtrack(i, rest - candidates[i])  # i 不加 1，可重复选\n        path 弹尾\n从 backtrack(0, target) 开始\n返回 res",
       "code": "def combinationSum(c, target):\n    res, path = [], []\n    def backtrack(start, rest):\n        if rest == 0:\n            res.append(path.copy())  # 凑出目标，收集\n            return\n        for i in range(start, len(c)):\n            if c[i] > rest:\n                continue  # 剪枝：超出剩余目标\n            path.append(c[i])\n            backtrack(i, rest - c[i])  # i 不前移，可重复选\n            path.pop()\n    backtrack(0, target)\n    return res",
       "weight": 3
-    },
-    {
-      "id": "lc0022",
-      "type": "recall",
-      "stem": "LC 22 · 括号生成：给定 n 对括号，生成所有可能且有效的括号组合。示例：输入 n=3，输出 [\"((()))\",\"(()())\",\"(())()\",\"()(())\",\"()()()\"]。",
-      "tags": [
-        "P0",
-        "Medium"
-      ],
-      "approach": {
-        "strategy": "回溯：按左右括号计数逐位拼串",
-        "steps": [
-          "已用左括号 open 小于 n 时可放左括号",
-          "已用右括号 close 小于 open 时才可放右括号，保证前缀合法",
-          "串长达到 2n 时收集连接结果"
-        ],
-        "timeCx": "O(4^n/√n)",
-        "spaceCx": "O(n)"
-      },
-      "pseudocode": "backtrack(open, close):\n    若 len(path) == 2n: 收集 ''.join(path); 返回\n    若 open < n: 放 '(' 递归后撤销\n    若 close < open: 放 ')' 递归后撤销\n从 (0,0) 开始\n返回 res",
-      "code": "def generateParenthesis(n):\n    res, path = [], []\n    def backtrack(open_, close):\n        if len(path) == 2 * n:\n            res.append(''.join(path))  # 收集一个合法组合\n            return\n        if open_ < n:  # 左括号还有余量\n            path.append('('); backtrack(open_ + 1, close); path.pop()\n        if close < open_:  # 右括号不能超过左括号\n            path.append(')'); backtrack(open_, close + 1); path.pop()\n    backtrack(0, 0)\n    return res",
-      "weight": 4
     },
     {
       "id": "lc0079",
@@ -188,5 +188,7 @@
       "code": "def solveNQueens(n):\n    res, path = [], []\n    cols, dg1, dg2 = set(), set(), set()  # 列、主对角、副对角\n    def backtrack(row):\n        if row == n:\n            res.append(['.' * c + 'Q' + '.' * (n - c - 1) for c in path])\n            return\n        for c in range(n):\n            if c in cols or row - c in dg1 or row + c in dg2:\n                continue  # 冲突剪枝\n            cols.add(c); dg1.add(row - c); dg2.add(row + c); path.append(c)\n            backtrack(row + 1)\n            path.pop(); cols.remove(c); dg1.remove(row - c); dg2.remove(row + c)\n    backtrack(0)\n    return res",
       "weight": 2
     }
-  ]
+  ],
+  "category": "algo",
+  "sortKey": 230
 }

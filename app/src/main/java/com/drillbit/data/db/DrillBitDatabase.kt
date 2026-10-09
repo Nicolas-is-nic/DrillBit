@@ -20,7 +20,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         DeletedQuestionEntity::class,
         FavoriteEntity::class,
     ],
-    version = 3,
+    version = 5,
     exportSchema = false,
 )
 abstract class DrillBitDatabase : RoomDatabase() {
@@ -54,6 +54,32 @@ abstract class DrillBitDatabase : RoomDatabase() {
                 db.execSQL("ALTER TABLE `questions` ADD COLUMN `recallJson` TEXT")
             }
         }
+        /** v4（2026-10-09 分类批次）：banks 增排序列与分类列（带默认值，旧数据自动归位） */
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `banks` ADD COLUMN `sortKey` INTEGER NOT NULL DEFAULT 9999")
+                db.execSQL("ALTER TABLE `banks` ADD COLUMN `category` TEXT NOT NULL DEFAULT 'knowledge'")
+            }
+        }
+        /**
+         * v5（2026-10-09 review F-2）：wrong 表去外键重建（与 favorites/deleted 同构）。
+         * 迁移保数据：建新表（无外键）→ 拷贝 → 换名 → 重建 bankId 索引。
+         */
+        private val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `wrong_new` (" +
+                        "`questionId` TEXT NOT NULL, `bankId` TEXT NOT NULL, " +
+                        "`retryCount` INTEGER NOT NULL, `wrongCount` INTEGER NOT NULL, " +
+                        "`addedAt` INTEGER NOT NULL, `lastWrongAt` INTEGER NOT NULL, " +
+                        "PRIMARY KEY(`questionId`))",
+                )
+                db.execSQL("INSERT INTO `wrong_new` SELECT * FROM `wrong`")
+                db.execSQL("DROP TABLE `wrong`")
+                db.execSQL("ALTER TABLE `wrong_new` RENAME TO `wrong`")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_wrong_bankId` ON `wrong` (`bankId`)")
+            }
+        }
         @Volatile
         private var instance: DrillBitDatabase? = null
 
@@ -63,7 +89,7 @@ abstract class DrillBitDatabase : RoomDatabase() {
                     context.applicationContext,
                     DrillBitDatabase::class.java,
                     "drillbit.db",
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3).build().also { instance = it }
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5).build().also { instance = it }
             }
     }
 }

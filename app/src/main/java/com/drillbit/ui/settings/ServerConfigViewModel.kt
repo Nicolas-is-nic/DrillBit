@@ -87,7 +87,17 @@ class ServerConfigViewModel : ViewModel() {
     private fun save() {
         viewModelScope.launch {
             val current = stateFlow.value
-            ServiceLocator.settingsStore.setServer(current.url, current.token)
+            // review F-30：保存层统一剥尾斜杠（此前备份剥、题库同步裸拼，填尾斜杠时行为分裂）
+            val url = current.url.trim().trimEnd('/')
+            if (url.startsWith("http://")) {
+                // review F-21：与 test() 对齐，明文地址保存即拦（此前运行时才 cleartext 报错）
+                stateFlow.value = stateFlow.value.copy(
+                    testResult = BannerUi("地址无效：安卓禁止明文 http，请改用 https 地址", BannerType.WARN),
+                )
+                return@launch
+            }
+            runCatching { ServiceLocator.settingsStore.setServer(url, current.token) }
+                .onFailure { android.util.Log.w("ServerConfig", "保存失败", it) }
             stateFlow.value = stateFlow.value.copy(
                 testResult = BannerUi("已保存", BannerType.OK),
             )

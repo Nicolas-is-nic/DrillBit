@@ -1,8 +1,8 @@
 {
   "id": "algo-string",
   "name": "算法 · 字符串",
-  "version": 1,
-  "updatedAt": "10-08",
+  "version": 2,
+  "updatedAt": "10-09",
   "questions": [
     {
       "id": "lc0415",
@@ -114,5 +114,7 @@
       "code": "def compareVersion(v1, v2):\n    a, b = v1.split('.'), v2.split('.')\n    for i in range(max(len(a), len(b))):\n        x = int(a[i]) if i < len(a) else 0  # 空段按 0\n        y = int(b[i]) if i < len(b) else 0\n        if x != y:\n            return 1 if x > y else -1\n    return 0",
       "weight": 2
     }
-  ]
+  ],
+  "category": "algo",
+  "sortKey": 200
 }

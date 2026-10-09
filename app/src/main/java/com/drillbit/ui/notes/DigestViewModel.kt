@@ -37,7 +37,7 @@ class DigestViewModel : ViewModel() {
     fun onEvent(event: DigestEvent) {
         when (event) {
             DigestEvent.Regenerate -> regenerate()
-            else -> Unit // ViewFull / Back 由导航层处理
+            else -> Unit // Back 由导航层处理
         }
     }
 

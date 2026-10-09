@@ -1,6 +1,7 @@
 package com.drillbit.ui.quiz
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.drillbit.ServiceLocator
 import com.drillbit.data.repo.QuizRepository
@@ -9,13 +10,13 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
 
 /**
  * 混合抽题配置 ViewModel：勾选题库、加减号题数（默认 10 / 下限 10 / 步进 10）、
  * Start 时按题目权重抽 N 题建混合卷会话（塞 SessionHolder 后由导航进入刷题页）。
+ * 2026-10-09 分类批次：构造参数 category 过滤勾选列表（从哪个页签发起就只列该分类的库）。
  */
-class MixConfigViewModel : ViewModel() {
+class MixConfigViewModel(private val category: String) : ViewModel() {
 
     private val repo: QuizRepository = ServiceLocator.quizRepository
 
@@ -31,14 +32,16 @@ class MixConfigViewModel : ViewModel() {
         count,
     ) { banks, selectedSet, countNow ->
         MixConfigUiState(
-            banks = banks.map { b ->
-                BankOption(
-                    bankId = b.id,
-                    name = b.name,
-                    questionCount = b.questionCount,
-                    selected = b.id in selectedSet,
-                )
-            },
+            banks = banks
+                .filter { it.category == category }
+                .map { b ->
+                    BankOption(
+                        bankId = b.id,
+                        name = b.name,
+                        questionCount = b.questionCount,
+                        selected = b.id in selectedSet,
+                    )
+                },
             count = countNow,
             minCount = MIN_COUNT,
             step = STEP,
@@ -77,6 +80,12 @@ class MixConfigViewModel : ViewModel() {
         if (session == null) return false
         com.drillbit.model.SessionHolder.pending = session
         return true
+    }
+
+    class Factory(private val category: String) : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>): T =
+            MixConfigViewModel(category) as T
     }
 
     companion object {

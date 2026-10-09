@@ -1,8 +1,8 @@
 {
   "id": "algo-stack",
   "name": "算法 · 栈与队列",
-  "version": 2,
-  "updatedAt": "10-08",
+  "version": 3,
+  "updatedAt": "10-09",
   "questions": [
     {
       "id": "lc0020",
@@ -27,28 +27,6 @@
       "weight": 4
     },
     {
-      "id": "lc0155",
-      "type": "recall",
-      "stem": "LC 155 · 最小栈：设计支持 push、pop、top 与 getMin 操作的栈，getMin 需在常数时间内取得栈内最小元素。pop 与 top 调用时栈保证非空。示例：MinStack 依次 push(-2)、push(0)、push(-3)，getMin() 返回 -3，pop 后 top() 返回 0、getMin() 返回 -2。",
-      "tags": [
-        "P1",
-        "Medium"
-      ],
-      "approach": {
-        "strategy": "辅助栈与主栈同步压入，栈顶恒为当前最小",
-        "steps": [
-          "主栈 st 存数据，最小栈 mn 每次压入当前值与 mn 栈顶的较小者",
-          "pop 时两栈同步弹出，mn 栈顶即对应历史每层的最小值",
-          "getMin 直接读 mn 栈顶，常数时间"
-        ],
-        "timeCx": "O(1) 单次操作",
-        "spaceCx": "O(n)"
-      },
-      "pseudocode": "push(val)：主栈入 val；mn 栈入 min(val, mn 栈顶或 val)\npop()：两栈同步弹出\ntop()：返回主栈顶\ngetMin()：返回 mn 栈顶",
-      "code": "class MinStack:\n    def __init__(self):\n        self.st, self.mn = [], []\n    def push(self, val):\n        self.st.append(val)      # 主栈入数据\n        self.mn.append(min(val, self.mn[-1] if self.mn else val))\n    def pop(self):\n        self.st.pop(); self.mn.pop()  # 两栈同步\n    def top(self):\n        return self.st[-1]\n    def getMin(self):\n        return self.mn[-1]       # 栈顶即当前最小",
-      "weight": 3
-    },
-    {
       "id": "lc0739",
       "type": "recall",
       "stem": "LC 739 · 每日温度：给定每日温度数组 temperatures，对每一天求还需等待几天才出现更高温度；等不到记 0。长度 1 到 10^5，温度 30 到 100。示例：输入 [73,74,75,71,69,72,76,73]，输出 [1,1,4,2,1,1,0,0]。",
@@ -69,6 +47,28 @@
       "pseudocode": "stack = 空栈（存下标）\nans = 全 0\nfor i in 0..n-1:\n    while 栈非空且 t[栈顶] < t[i]:\n        j = 弹栈\n        ans[j] = i - j     # 等待天数\n    i 入栈\nreturn ans",
       "code": "def dailyTemperatures(t):\n    ans = [0] * len(t)\n    stack = []                # 下标栈，温度单调递减\n    for i, x in enumerate(t):\n        while stack and t[stack[-1]] < x:\n            j = stack.pop()\n            ans[j] = i - j    # 回填等待天数\n        stack.append(i)\n    return ans",
       "weight": 4
+    },
+    {
+      "id": "lc0155",
+      "type": "recall",
+      "stem": "LC 155 · 最小栈：设计支持 push、pop、top 与 getMin 操作的栈，getMin 需在常数时间内取得栈内最小元素。pop 与 top 调用时栈保证非空。示例：MinStack 依次 push(-2)、push(0)、push(-3)，getMin() 返回 -3，pop 后 top() 返回 0、getMin() 返回 -2。",
+      "tags": [
+        "P1",
+        "Medium"
+      ],
+      "approach": {
+        "strategy": "辅助栈与主栈同步压入，栈顶恒为当前最小",
+        "steps": [
+          "主栈 st 存数据，最小栈 mn 每次压入当前值与 mn 栈顶的较小者",
+          "pop 时两栈同步弹出，mn 栈顶即对应历史每层的最小值",
+          "getMin 直接读 mn 栈顶，常数时间"
+        ],
+        "timeCx": "O(1) 单次操作",
+        "spaceCx": "O(n)"
+      },
+      "pseudocode": "push(val)：主栈入 val；mn 栈入 min(val, mn 栈顶或 val)\npop()：两栈同步弹出\ntop()：返回主栈顶\ngetMin()：返回 mn 栈顶",
+      "code": "class MinStack:\n    def __init__(self):\n        self.st, self.mn = [], []\n    def push(self, val):\n        self.st.append(val)      # 主栈入数据\n        self.mn.append(min(val, self.mn[-1] if self.mn else val))\n    def pop(self):\n        self.st.pop(); self.mn.pop()  # 两栈同步\n    def top(self):\n        return self.st[-1]\n    def getMin(self):\n        return self.mn[-1]       # 栈顶即当前最小",
+      "weight": 3
     },
     {
       "id": "lc0084",
@@ -118,5 +118,7 @@
       "code": "def decodeString(s):\n    res, num, st_p, st_n = '', 0, [], []\n    for ch in s:\n        if ch.isdigit():\n            num = num * 10 + int(ch)    # 累积倍数\n        elif ch == '[':\n            st_p.append(res); st_n.append(num)\n            res, num = '', 0            # 清空进内层\n        elif ch == ']':\n            res = st_p.pop() + res * st_n.pop()  # 展开拼接\n        else:\n            res += ch\n    return res",
       "weight": 3
     }
-  ]
+  ],
+  "category": "algo",
+  "sortKey": 150
 }

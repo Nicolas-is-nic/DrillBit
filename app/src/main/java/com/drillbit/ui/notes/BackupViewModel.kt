@@ -68,7 +68,7 @@ class BackupViewModel : ViewModel() {
             runCatching { repo.backup(settings) }
                 .onSuccess { count ->
                     val now = System.currentTimeMillis()
-                    ServiceLocator.settingsStore.setLastBackupAt(now)
+                    runCatching { ServiceLocator.settingsStore.setLastBackupAt(now) } // review F-26
                     stateFlow.value = stateFlow.value.copy(
                         uploading = false,
                         lastBackupText = TimeFmt.medium(now),

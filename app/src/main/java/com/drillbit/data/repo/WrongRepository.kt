@@ -32,9 +32,10 @@ class WrongRepository(private val db: DrillBitDatabase) {
         wrongs
             .filterNot { it.questionId in deleted }
             .sortedByDescending { it.lastWrongAt }
-            .map { w ->
-                val q = db.questionDao().getById(w.questionId)
-                WrongListItem(w, q, q?.let { bankNames[it.bankId] } ?: "")
+            .mapNotNull { w ->
+                // 孤儿错题（父题未同步，外键已去）不进列表，题库同步后自动恢复（review F-2 配套）
+                val q = db.questionDao().getById(w.questionId) ?: return@mapNotNull null
+                WrongListItem(w, q, bankNames[q.bankId] ?: "")
             }
     }
 

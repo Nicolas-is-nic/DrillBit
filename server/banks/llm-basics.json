@@ -1,8 +1,8 @@
 {
   "id": "llm-basics",
   "name": "大模型基础",
-  "version": 3,
-  "updatedAt": "09-30",
+  "version": 4,
+  "updatedAt": "10-09",
   "questions": [
     {
       "id": "q-0001",
@@ -1446,5 +1446,7 @@
       "explanation": "结构侧减头数、精度侧减字节数、管理侧消碎片是三条主线；温度是解码采样参数，与显存无关。",
       "weight": 3
     }
-  ]
+  ],
+  "category": "knowledge",
+  "sortKey": 10
 }

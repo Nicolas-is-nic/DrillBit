@@ -25,6 +25,7 @@ import com.drillbit.ui.components.DBButton
 import com.drillbit.ui.components.DBButtonType
 import com.drillbit.ui.components.DbTopBar
 import com.drillbit.ui.components.ScrimModal
+import com.drillbit.ui.components.SettingRow
 import com.drillbit.ui.components.StatBox
 import com.drillbit.ui.components.StatRow
 import com.drillbit.ui.theme.DrillBitTheme
@@ -65,6 +66,17 @@ fun BankDetailScreen(state: BankDetailUiState, onEvent: (BankDetailEvent) -> Uni
                     onClick = { onEvent(BankDetailEvent.ContinueClick) },
                     modifier = Modifier.fillMaxWidth(),
                 )
+                // 层级专项入口（2026-10-09 分类批次，仅算法库渲染）：P0 优先直达
+                if (state.tiers.isNotEmpty()) {
+                    Spacer(Modifier.height(10.dp))
+                    state.tiers.forEach { entry ->
+                        SettingRow(
+                            title = "${entry.tier}　优先刷" ,
+                            valueText = "${entry.count} 题 · 临时会话",
+                            onClick = { onEvent(BankDetailEvent.TierStartClick(entry.tier)) },
+                        )
+                    }
+                }
                 Spacer(Modifier.height(10.dp))
                 Row(modifier = Modifier.fillMaxWidth()) {
                     DBButton(
@@ -149,6 +161,7 @@ private fun previewState() = BankDetailUiState(
     name = "大模型基础",
     total = 128,
     done = 42,
+    tiers = emptyList(),
     lastSyncText = "09-27 21:40",
     serverVersionText = "v3 · 有新版本 v4",
     hasUpdate = true,
@@ -161,6 +174,7 @@ private fun previewFinishedState() = BankDetailUiState(
     name = "Agent 与工具调用",
     total = 96,
     done = 96,
+    tiers = emptyList(),
     lastSyncText = "09-24 08:05",
     serverVersionText = "v2 · 已是最新",
     hasUpdate = false,

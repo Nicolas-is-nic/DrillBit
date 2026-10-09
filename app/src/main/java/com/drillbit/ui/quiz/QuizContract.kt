@@ -10,7 +10,7 @@ package com.drillbit.ui.quiz
  * QuizEvent 增 RememberedClick/ForgotClick（文档已同步）。
  */
 
-enum class QuizMode { SINGLE, MIX, RETRY, FAVORITE }
+enum class QuizMode { SINGLE, MIX, RETRY, FAVORITE, TIER }
 enum class QuizPhase { ANSWERING, ANSWERED }
 enum class QuestionType { SINGLE, MULTI, JUDGE, RECALL }
 

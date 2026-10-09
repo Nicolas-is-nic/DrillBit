@@ -1,8 +1,8 @@
 {
   "id": "tool-mcp",
   "name": "工具调用与 MCP",
-  "version": 3,
-  "updatedAt": "09-30",
+  "version": 4,
+  "updatedAt": "10-09",
   "questions": [
     {
       "id": "q-0001",
@@ -1125,5 +1125,7 @@
       "explanation": "分级是权限、确认、审计的共同基准：读错了可重试修正，写错了是真实世界损失。统一最高权限等于把爆炸半径放到最大，违反最小权限原则。",
       "weight": 4
     }
-  ]
+  ],
+  "category": "knowledge",
+  "sortKey": 60
 }

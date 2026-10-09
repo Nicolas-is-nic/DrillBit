@@ -1,8 +1,8 @@
 {
   "id": "algo-linkedlist",
   "name": "算法 · 链表与设计",
-  "version": 1,
-  "updatedAt": "10-08",
+  "version": 2,
+  "updatedAt": "10-09",
   "questions": [
     {
       "id": "lc0206",
@@ -83,28 +83,6 @@
       "weight": 4
     },
     {
-      "id": "lc0023",
-      "type": "recall",
-      "stem": "LC 23 · 合并 K 个升序链表：给定升序链表数组 lists，将全部链表合并为一条升序链表并返回其头节点。k 满足 0<=k<=10^4，各链长度之和不超过 10^4。示例：输入 lists=[[1,4,5],[1,3,4],[2,6]]，输出 [1,1,2,3,4,4,5,6]。",
-      "tags": [
-        "P1",
-        "Hard"
-      ],
-      "approach": {
-        "strategy": "小根堆存各链当前头，逐个弹出最小拼接",
-        "steps": [
-          "把所有非空链表头以 (值, 链下标) 入小根堆",
-          "每次弹堆顶最小结点接到结果尾，该链头前移，后继非空则入堆",
-          "堆空即合并完成，返回 dummy.next"
-        ],
-        "timeCx": "O(N log k)",
-        "spaceCx": "O(k)"
-      },
-      "pseudocode": "heap = [(非空链头值, 链下标)] 建小根堆\ndummy = tail = 新结点\nwhile heap 非空:\n    弹出 (值, i)，lists[i] 接到 tail 后\n    lists[i] 前移一位，新头非空则入堆\nreturn dummy.next",
-      "code": "from heapq import heapify, heappush, heappop\n\ndef mergeKLists(lists):\n    heap = [(l.val, i) for i, l in enumerate(lists) if l]\n    heapify(heap)               # 各链头入小根堆\n    dummy = tail = ListNode(0)\n    while heap:\n        _, i = heappop(heap)    # 弹最小值所在链\n        tail.next = lists[i]\n        lists[i] = lists[i].next\n        tail = tail.next\n        if lists[i]:            # 后继入堆\n            heappush(heap, (lists[i].val, i))\n    return dummy.next",
-      "weight": 3
-    },
-    {
       "id": "lc0141",
       "type": "recall",
       "stem": "LC 141 · 环形链表：给定链表头 head，判断链表中是否存在环（某结点可经 next 指针再次到达）。pos 表示尾结点 next 指向的结点下标，仅用于描述、不作为参数传入。示例：输入 head=[3,2,0,-4], pos=1，输出 true。",
@@ -159,34 +137,6 @@
       "weight": 4
     },
     {
-      "id": "lc0160",
-      "type": "recall",
-      "stem": "LC 160 · 相交链表：给你两条无环单链表头 headA 与 headB，两链可能从某结点起共享后续全部结点，返回该相交结点；无交点返回 null，交点之后不会再分叉。示例：输入 listA=[4,1,8,4,5], listB=[5,6,1,8,4,5]（两链自值 8 的结点起相交），输出相交结点（值 8）。",
-      "tags": [
-        "P1",
-        "Easy"
-      ],
-      "images": [
-        "img/lc0160-1.png",
-        "img/lc0160-2.png",
-        "img/lc0160-3.png",
-        "img/lc0160-4.png"
-      ],
-      "approach": {
-        "strategy": "双指针互串两链走等长路程，同步到交点",
-        "steps": [
-          "a、b 分别从 headA、headB 出发逐结点前进",
-          "走完自己的链后跳到另一条链头继续（a 转 headB，b 转 headA）",
-          "两者各走 m+n 路程后同时到达交点；无交点则同时到达 null 退出"
-        ],
-        "timeCx": "O(m+n)",
-        "spaceCx": "O(1)"
-      },
-      "pseudocode": "a = headA，b = headB\nwhile a != b:\n    a = a.next，a 为空则转 headB\n    b = b.next，b 为空则转 headA\nreturn a",
-      "code": "def getIntersectionNode(headA, headB):\n    a, b = headA, headB\n    while a is not b:\n        a = a.next if a else headB  # 走完转对方\n        b = b.next if b else headA\n    return a                        # 交点或同 null",
-      "weight": 3
-    },
-    {
       "id": "lc0019",
       "type": "recall",
       "stem": "LC 19 · 删除链表的倒数第 N 个结点：给定链表头 head 与整数 n，删除倒数第 n 个结点并返回头节点，要求尽量一趟扫描实现。链表长度 1 到 100，1<=n<=链表长度。示例：输入 head=[1,2,3,4,5], n=2，输出 [1,2,3,5]。",
@@ -213,30 +163,77 @@
       "weight": 4
     },
     {
-      "id": "lc0143",
+      "id": "lc0146",
       "type": "recall",
-      "stem": "LC 143 · 重排链表：给定单链表头 head，就地将结点重排为 L0→Ln→L1→Ln-1→L2→Ln-2→… 的锯齿形式，无返回值。结点数 1 到 5×10^4。示例：输入 head=[1,2,3,4,5]，重排后链表为 [1,5,2,4,3]。",
+      "stem": "LC 146 · LRU 缓存：设计 get 与 put 均为 O(1) 的 LRU 结构：get(key) 未命中返回 -1，命中返回值并记为最近使用；put(key, value) 写入或更新并记为最近使用，超容量时淘汰最久未使用的键。容量 1 到 3000。示例：LRUCache(2) 依次 put(1,1)、put(2,2)、get(1) 返回 1，再 put(3,3) 淘汰键 2，get(2) 返回 -1。",
       "tags": [
-        "P2",
+        "P0",
         "Medium"
       ],
-      "images": [
-        "img/lc0143-1.png",
-        "img/lc0143-2.png"
+      "approach": {
+        "strategy": "OrderedDict 当双向链表用，命中移尾超容逐头",
+        "steps": [
+          "OrderedDict 内部即哈希表加双向链表，尾部为最新、头部为最旧",
+          "get 命中先 move_to_end(key) 提为最近使用再返回值",
+          "put 命中同样先 move_to_end，随后写入键值",
+          "长度超容量时 popitem(last=False) 淘汰头部最旧键"
+        ],
+        "timeCx": "O(1) 单次操作",
+        "spaceCx": "O(capacity)"
+      },
+      "pseudocode": "get(key):\n    key 不在字典: return -1\n    move_to_end(key)             # 提为最近使用\n    return 对应值\nput(key, value):\n    已存在则先 move_to_end(key)\n    写入键值\n    长度超容量: popitem(last=False)  # 淘汰最旧",
+      "code": "from collections import OrderedDict\nclass LRUCache:\n    def __init__(self, capacity):\n        self.cap, self.od = capacity, OrderedDict()\n    def get(self, key):\n        if key not in self.od:\n            return -1\n        self.od.move_to_end(key)     # 提为最近使用\n        return self.od[key]\n    def put(self, key, value):\n        if key in self.od:\n            self.od.move_to_end(key)\n        self.od[key] = value         # 写入或更新\n        if len(self.od) > self.cap:\n            self.od.popitem(last=False)  # 淘汰最旧",
+      "weight": 5
+    },
+    {
+      "id": "lc0023",
+      "type": "recall",
+      "stem": "LC 23 · 合并 K 个升序链表：给定升序链表数组 lists，将全部链表合并为一条升序链表并返回其头节点。k 满足 0<=k<=10^4，各链长度之和不超过 10^4。示例：输入 lists=[[1,4,5],[1,3,4],[2,6]]，输出 [1,1,2,3,4,4,5,6]。",
+      "tags": [
+        "P1",
+        "Hard"
       ],
       "approach": {
-        "strategy": "快慢找中点断链，后半反转后交替拼接",
+        "strategy": "小根堆存各链当前头，逐个弹出最小拼接",
         "steps": [
-          "快慢指针找中点 slow，在中点断开成前后两链",
-          "反转后半链得 prev",
-          "从前链与后链依次各取一个结点交错拼接，直到后链用尽"
+          "把所有非空链表头以 (值, 链下标) 入小根堆",
+          "每次弹堆顶最小结点接到结果尾，该链头前移，后继非空则入堆",
+          "堆空即合并完成，返回 dummy.next"
         ],
-        "timeCx": "O(n)",
+        "timeCx": "O(N log k)",
+        "spaceCx": "O(k)"
+      },
+      "pseudocode": "heap = [(非空链头值, 链下标)] 建小根堆\ndummy = tail = 新结点\nwhile heap 非空:\n    弹出 (值, i)，lists[i] 接到 tail 后\n    lists[i] 前移一位，新头非空则入堆\nreturn dummy.next",
+      "code": "from heapq import heapify, heappush, heappop\n\ndef mergeKLists(lists):\n    heap = [(l.val, i) for i, l in enumerate(lists) if l]\n    heapify(heap)               # 各链头入小根堆\n    dummy = tail = ListNode(0)\n    while heap:\n        _, i = heappop(heap)    # 弹最小值所在链\n        tail.next = lists[i]\n        lists[i] = lists[i].next\n        tail = tail.next\n        if lists[i]:            # 后继入堆\n            heappush(heap, (lists[i].val, i))\n    return dummy.next",
+      "weight": 3
+    },
+    {
+      "id": "lc0160",
+      "type": "recall",
+      "stem": "LC 160 · 相交链表：给你两条无环单链表头 headA 与 headB，两链可能从某结点起共享后续全部结点，返回该相交结点；无交点返回 null，交点之后不会再分叉。示例：输入 listA=[4,1,8,4,5], listB=[5,6,1,8,4,5]（两链自值 8 的结点起相交），输出相交结点（值 8）。",
+      "tags": [
+        "P1",
+        "Easy"
+      ],
+      "images": [
+        "img/lc0160-1.png",
+        "img/lc0160-2.png",
+        "img/lc0160-3.png",
+        "img/lc0160-4.png"
+      ],
+      "approach": {
+        "strategy": "双指针互串两链走等长路程，同步到交点",
+        "steps": [
+          "a、b 分别从 headA、headB 出发逐结点前进",
+          "走完自己的链后跳到另一条链头继续（a 转 headB，b 转 headA）",
+          "两者各走 m+n 路程后同时到达交点；无交点则同时到达 null 退出"
+        ],
+        "timeCx": "O(m+n)",
         "spaceCx": "O(1)"
       },
-      "pseudocode": "快慢指针找中点 slow\nl2 = slow.next，slow.next = 空\n反转 l2 得 prev\nl1 = head，l2 = prev\nwhile l2 非空:\n    n1 = l1.next，n2 = l2.next\n    l1.next = l2，l2.next = n1\n    l1 = n1，l2 = n2",
-      "code": "def reorderList(head):\n    slow = fast = head\n    while fast.next and fast.next.next:  # 找中点\n        slow, fast = slow.next, fast.next.next\n    l2, slow.next, prev = slow.next, None, None\n    while l2:                            # 反转后半\n        l2.next, l2, prev = prev, l2.next, l2\n    l1, l2 = head, prev\n    while l2:                            # 交替拼接\n        n1, n2 = l1.next, l2.next\n        l1.next, l2.next = l2, n1\n        l1, l2 = n1, n2",
-      "weight": 2
+      "pseudocode": "a = headA，b = headB\nwhile a != b:\n    a = a.next，a 为空则转 headB\n    b = b.next，b 为空则转 headA\nreturn a",
+      "code": "def getIntersectionNode(headA, headB):\n    a, b = headA, headB\n    while a is not b:\n        a = a.next if a else headB  # 走完转对方\n        b = b.next if b else headA\n    return a                        # 交点或同 null",
+      "weight": 3
     },
     {
       "id": "lc0138",
@@ -266,27 +263,30 @@
       "weight": 3
     },
     {
-      "id": "lc0146",
+      "id": "lc0143",
       "type": "recall",
-      "stem": "LC 146 · LRU 缓存：设计 get 与 put 均为 O(1) 的 LRU 结构：get(key) 未命中返回 -1，命中返回值并记为最近使用；put(key, value) 写入或更新并记为最近使用，超容量时淘汰最久未使用的键。容量 1 到 3000。示例：LRUCache(2) 依次 put(1,1)、put(2,2)、get(1) 返回 1，再 put(3,3) 淘汰键 2，get(2) 返回 -1。",
+      "stem": "LC 143 · 重排链表：给定单链表头 head，就地将结点重排为 L0→Ln→L1→Ln-1→L2→Ln-2→… 的锯齿形式，无返回值。结点数 1 到 5×10^4。示例：输入 head=[1,2,3,4,5]，重排后链表为 [1,5,2,4,3]。",
       "tags": [
-        "P0",
+        "P2",
         "Medium"
       ],
+      "images": [
+        "img/lc0143-1.png",
+        "img/lc0143-2.png"
+      ],
       "approach": {
-        "strategy": "OrderedDict 当双向链表用，命中移尾超容逐头",
+        "strategy": "快慢找中点断链，后半反转后交替拼接",
         "steps": [
-          "OrderedDict 内部即哈希表加双向链表，尾部为最新、头部为最旧",
-          "get 命中先 move_to_end(key) 提为最近使用再返回值",
-          "put 命中同样先 move_to_end，随后写入键值",
-          "长度超容量时 popitem(last=False) 淘汰头部最旧键"
+          "快慢指针找中点 slow，在中点断开成前后两链",
+          "反转后半链得 prev",
+          "从前链与后链依次各取一个结点交错拼接，直到后链用尽"
         ],
-        "timeCx": "O(1) 单次操作",
-        "spaceCx": "O(capacity)"
+        "timeCx": "O(n)",
+        "spaceCx": "O(1)"
       },
-      "pseudocode": "get(key):\n    key 不在字典: return -1\n    move_to_end(key)             # 提为最近使用\n    return 对应值\nput(key, value):\n    已存在则先 move_to_end(key)\n    写入键值\n    长度超容量: popitem(last=False)  # 淘汰最旧",
-      "code": "from collections import OrderedDict\nclass LRUCache:\n    def __init__(self, capacity):\n        self.cap, self.od = capacity, OrderedDict()\n    def get(self, key):\n        if key not in self.od:\n            return -1\n        self.od.move_to_end(key)     # 提为最近使用\n        return self.od[key]\n    def put(self, key, value):\n        if key in self.od:\n            self.od.move_to_end(key)\n        self.od[key] = value         # 写入或更新\n        if len(self.od) > self.cap:\n            self.od.popitem(last=False)  # 淘汰最旧",
-      "weight": 5
+      "pseudocode": "快慢指针找中点 slow\nl2 = slow.next，slow.next = 空\n反转 l2 得 prev\nl1 = head，l2 = prev\nwhile l2 非空:\n    n1 = l1.next，n2 = l2.next\n    l1.next = l2，l2.next = n1\n    l1 = n1，l2 = n2",
+      "code": "def reorderList(head):\n    slow = fast = head\n    while fast.next and fast.next.next:  # 找中点\n        slow, fast = slow.next, fast.next.next\n    l2, slow.next, prev = slow.next, None, None\n    while l2:                            # 反转后半\n        l2.next, l2, prev = prev, l2.next, l2\n    l1, l2 = head, prev\n    while l2:                            # 交替拼接\n        n1, n2 = l1.next, l2.next\n        l1.next, l2.next = l2, n1\n        l1, l2 = n1, n2",
+      "weight": 2
     },
     {
       "id": "lc0460",
@@ -310,5 +310,7 @@
       "code": "from collections import defaultdict, OrderedDict\nclass LFUCache:\n    def __init__(self, cap):\n        self.cap, self.minf, self.val = cap, 0, {}\n        self.freq = defaultdict(OrderedDict)  # 频次分桶\n    def _use(self, key):    # 频次加一并移桶\n        self.val[key][1] += 1; f = self.val[key][1]; self.freq[f][key] = None; del self.freq[f-1][key]  # 移入新频桶\n        if not self.freq[f-1] and self.minf == f-1: self.minf = f\n    def get(self, key):\n        if key not in self.val: return -1\n        self._use(key); return self.val[key][0]\n    def put(self, key, value):\n        if key in self.val: self.val[key][0] = value; self._use(key); return\n        if self.cap and len(self.val) == self.cap: k = self.freq[self.minf].popitem(last=False)[0]; del self.val[k]  # 淘汰最小频最旧\n        if self.cap: self.val[key], self.freq[1][key], self.minf = [value, 1], None, 1",
       "weight": 2
     }
-  ]
+  ],
+  "category": "algo",
+  "sortKey": 120
 }

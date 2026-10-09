@@ -11,7 +11,7 @@ interface BankDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(bank: BankEntity)
 
-    @Query("SELECT * FROM banks ORDER BY name")
+    @Query("SELECT * FROM banks ORDER BY sortKey, name")
     fun observeAll(): Flow<List<BankEntity>>
 
     @Query("SELECT * FROM banks WHERE id = :bankId")

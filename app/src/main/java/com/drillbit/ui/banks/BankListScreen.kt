@@ -30,6 +30,7 @@ import com.drillbit.ui.components.DBProgressBar
 import com.drillbit.ui.components.DbTopBar
 import com.drillbit.ui.components.DbTopBarAction
 import com.drillbit.ui.components.ScrimModal
+import com.drillbit.ui.components.Segmented
 import com.drillbit.ui.components.TagChip
 import com.drillbit.ui.components.TagChipType
 import com.drillbit.ui.theme.DrillBitTheme
@@ -58,6 +59,13 @@ fun BankListScreen(state: BankListUiState, onEvent: (BankListEvent) -> Unit) {
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 14.dp),
             ) {
+                // 分类页签：知识库 | 算法库（2026-10-09 分类批次）
+                Segmented(
+                    options = listOf("知识库", "算法库"),
+                    selected = if (state.category == "algo") 1 else 0,
+                    onSelect = { onEvent(BankListEvent.CategoryChange(if (it == 1) "algo" else "knowledge")) },
+                    modifier = Modifier.padding(top = 4.dp, bottom = 8.dp),
+                )
                 Text(
                     text = state.lastSyncText,
                     style = MaterialTheme.typography.labelSmall,
@@ -71,6 +79,14 @@ fun BankListScreen(state: BankListUiState, onEvent: (BankListEvent) -> Unit) {
                         modifier = Modifier.padding(bottom = 10.dp),
                     )
                 }
+                if (state.banks.isEmpty()) {
+                    Text(
+                        text = "该分类暂无题库，点右上「同步」拉取",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = colors.text2,
+                        modifier = Modifier.padding(vertical = 24.dp),
+                    )
+                }
                 state.banks.forEach { bank ->
                     BankListRow(
                         bank = bank,
@@ -80,7 +96,7 @@ fun BankListScreen(state: BankListUiState, onEvent: (BankListEvent) -> Unit) {
                 Spacer(Modifier.height(6.dp))
                 DBButton(
                     text = "混合抽题",
-                    onClick = { onEvent(BankListEvent.MixClick) },
+                    onClick = { onEvent(BankListEvent.MixClick(state.category)) },
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Spacer(Modifier.height(14.dp))
@@ -205,6 +221,7 @@ private fun previewState() = BankListUiState(
         BankCard("bank-agent", "Agent 与工具调用", 96, 60, false, "更新于 09-24"),
         BankCard("bank-tune", "模型微调与部署", 64, 0, false, "更新于 09-20"),
     ),
+    category = "knowledge",
     syncing = false,
     lastSyncText = "服务器已连接 · 上次同步 今天 08:20",
     updateDialog = null,

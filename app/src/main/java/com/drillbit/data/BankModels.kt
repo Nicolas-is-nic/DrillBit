@@ -13,6 +13,10 @@ data class BankIndexItem(
     val version: Int,
     val updatedAt: String,
     val questionCount: Int,
+    /** 列表排序键（2026-10-09 分类批次）：知识库 10-99 / 算法库 110+，缺省 9999 垫底 */
+    val sortKey: Int = 9999,
+    /** 分类："knowledge" | "algo"，缺省 knowledge */
+    val category: String = "knowledge",
 )
 
 data class QuestionPayload(
@@ -67,6 +71,9 @@ data class BankPayload(
     val version: Int,
     val updatedAt: String,
     val questions: List<QuestionPayload>,
+    /** 列表排序键与分类（2026-10-09 分类批次），缺省值与旧数据兼容 */
+    val sortKey: Int = 9999,
+    val category: String = "knowledge",
 )
 
 /** 解析 GET /api/index 的响应（数组） */
@@ -80,6 +87,8 @@ fun parseBankIndex(jsonText: String): List<BankIndexItem> {
             version = o.getInt("version"),
             updatedAt = o.optString("updatedAt", ""),
             questionCount = o.optInt("questionCount", 0),
+            sortKey = o.optInt("sortKey", 9999),
+            category = o.optString("category", "knowledge"),
         )
     }
 }
@@ -158,6 +167,8 @@ fun parseBank(jsonText: String): BankPayload {
         version = o.getInt("version"),
         updatedAt = o.optString("updatedAt", ""),
         questions = questions,
+        sortKey = o.optInt("sortKey", 9999),
+        category = o.optString("category", "knowledge"),
     )
 }
 

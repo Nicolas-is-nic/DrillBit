@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.drillbit.ServiceLocator
 import com.drillbit.ui.components.BannerType
-import com.drillbit.data.BankIndexItem
 import com.drillbit.ui.components.BannerUi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -17,6 +16,7 @@ import com.drillbit.util.TimeFmt
 
 /**
  * 题库列表 ViewModel：同步（服务器/本地测试导入）、更新弹窗、列表数据。
+ * 2026-10-09 分类批次：页签（知识库/算法库）记忆在 DataStore，列表按分类过滤。
  * 契约另一侧：产出 BankListUiState，消费 BankListEvent（跳转类由导航层处理）。
  */
 class BankListViewModel : ViewModel() {
@@ -35,30 +35,40 @@ class BankListViewModel : ViewModel() {
     /** 同步/更新结果提示（成功与失败都上浮，非空展示提示条） */
     private val banner = MutableStateFlow<BannerUi?>(null)
 
-    /** 服务器目录全量（弹窗列出「无变化」项用） */
-
-    private val baseState = combine(
+    /** 列表与进度合并（避免 combine 超五路） */
+    private val banksWithProgress = combine(
         repo.observeBanks(),
         repo.observeProgress(),
+    ) { banks, progress -> banks to progress.associateBy { it.bankId } }
+
+    private val baseState = combine(
+        banksWithProgress,
         syncing,
         pendingUpdates,
         updateDialog,
-    ) { banks, progress, syncingNow, pending, dialog ->
-        val progressMap = progress.associateBy { it.bankId }
-        val last = banks.maxOfOrNull { it.lastSyncAt } ?: 0L
+        ServiceLocator.settingsStore.settings,
+    ) { (banks, progressMap), syncingNow, pending, dialog, settings ->
         BankListUiState(
-            banks = banks.map { b ->
-                BankCard(
-                    bankId = b.id,
-                    name = b.name,
-                    questionCount = b.questionCount,
-                    doneCount = progressMap[b.id]?.doneCount ?: 0,
-                    hasUpdate = pending.containsKey(b.id),
-                    updatedAtText = TimeFmt.short(b.lastSyncAt),
-                )
-            },
+            banks = banks
+                .filter { it.category == settings.banksCategory }
+                .map { b ->
+                    BankCard(
+                        bankId = b.id,
+                        name = b.name,
+                        questionCount = b.questionCount,
+                        doneCount = progressMap[b.id]?.doneCount ?: 0,
+                        hasUpdate = pending.containsKey(b.id),
+                        updatedAtText = TimeFmt.short(b.lastSyncAt),
+                    )
+                },
+            category = settings.banksCategory,
             syncing = syncingNow,
-            lastSyncText = if (last > 0) "上次同步 ${TimeFmt.medium(last)}" else "尚未同步",
+            lastSyncText = if (banks.isNotEmpty()) {
+                val last = banks.maxOfOrNull { it.lastSyncAt } ?: 0L
+                if (last > 0) "上次同步 ${TimeFmt.medium(last)}" else "尚未同步"
+            } else {
+                "尚未同步"
+            },
             updateDialog = dialog,
             banner = null,
         )
@@ -71,6 +81,7 @@ class BankListViewModel : ViewModel() {
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = BankListUiState(
             banks = emptyList(),
+            category = "knowledge",
             syncing = false,
             lastSyncText = "尚未同步",
             updateDialog = null,
@@ -81,9 +92,18 @@ class BankListViewModel : ViewModel() {
     fun onEvent(event: BankListEvent) {
         when (event) {
             BankListEvent.SyncClick -> sync()
+            is BankListEvent.CategoryChange -> switchCategory(event.category)
             BankListEvent.UpdateConfirm -> confirmUpdate()
             BankListEvent.UpdateCancel -> updateDialog.value = null
             else -> Unit
+        }
+    }
+
+    /** 页签切换：写 DataStore，列表经 settings flow 自动刷新 */
+    private fun switchCategory(category: String) {
+        if (category != "knowledge" && category != "algo") return
+        viewModelScope.launch {
+            runCatching { ServiceLocator.settingsStore.setBanksCategory(category) } // review F-26
         }
     }
 

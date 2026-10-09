@@ -1,35 +1,9 @@
 {
   "id": "algo-tree",
   "name": "算法 · 二叉树",
-  "version": 1,
-  "updatedAt": "10-08",
+  "version": 2,
+  "updatedAt": "10-09",
   "questions": [
-    {
-      "id": "lc0144",
-      "type": "recall",
-      "stem": "LC 144 · 二叉树的前序遍历：给你二叉树的根节点 root，返回节点值的前序遍历（顺序：根、左、右）。进阶：用迭代完成。示例：输入 [1,null,2,3]，输出 [1,2,3]。",
-      "tags": [
-        "P1",
-        "Easy"
-      ],
-      "images": [
-        "img/lc0144-1.png",
-        "img/lc0144-2.png"
-      ],
-      "approach": {
-        "strategy": "显式栈迭代：根入栈，弹出即访问，右先压左后压",
-        "steps": [
-          "根节点入栈，结果列表置空",
-          "弹栈访问节点值，再依次把右孩子、左孩子压栈（右先入保证左先出）",
-          "栈空结束，栈的顺序天然保证中左右"
-        ],
-        "timeCx": "O(n)",
-        "spaceCx": "O(n)"
-      },
-      "pseudocode": "stack = [root]\nresult = 空列表\nwhile stack 非空:\n    node = stack.pop()\n    result 追加 node.val\n    若 node.right 非空: 右孩子入栈\n    若 node.left 非空: 左孩子入栈\nreturn result",
-      "code": "def preorderTraversal(root):\n    res, stack = [], [root] if root else []\n    while stack:\n        node = stack.pop()        # 弹出当前子树根\n        res.append(node.val)      # 先访问根\n        if node.right:\n            stack.append(node.right)  # 右先入后出\n        if node.left:\n            stack.append(node.left)\n    return res",
-      "weight": 3
-    },
     {
       "id": "lc0102",
       "type": "recall",
@@ -261,6 +235,32 @@
       "weight": 4
     },
     {
+      "id": "lc0144",
+      "type": "recall",
+      "stem": "LC 144 · 二叉树的前序遍历：给你二叉树的根节点 root，返回节点值的前序遍历（顺序：根、左、右）。进阶：用迭代完成。示例：输入 [1,null,2,3]，输出 [1,2,3]。",
+      "tags": [
+        "P1",
+        "Easy"
+      ],
+      "images": [
+        "img/lc0144-1.png",
+        "img/lc0144-2.png"
+      ],
+      "approach": {
+        "strategy": "显式栈迭代：根入栈，弹出即访问，右先压左后压",
+        "steps": [
+          "根节点入栈，结果列表置空",
+          "弹栈访问节点值，再依次把右孩子、左孩子压栈（右先入保证左先出）",
+          "栈空结束，栈的顺序天然保证中左右"
+        ],
+        "timeCx": "O(n)",
+        "spaceCx": "O(n)"
+      },
+      "pseudocode": "stack = [root]\nresult = 空列表\nwhile stack 非空:\n    node = stack.pop()\n    result 追加 node.val\n    若 node.right 非空: 右孩子入栈\n    若 node.left 非空: 左孩子入栈\nreturn result",
+      "code": "def preorderTraversal(root):\n    res, stack = [], [root] if root else []\n    while stack:\n        node = stack.pop()        # 弹出当前子树根\n        res.append(node.val)      # 先访问根\n        if node.right:\n            stack.append(node.right)  # 右先入后出\n        if node.left:\n            stack.append(node.left)\n    return res",
+      "weight": 3
+    },
+    {
       "id": "lc0230",
       "type": "recall",
       "stem": "LC 230 · 二叉搜索树中第 K 小的元素：给定二叉搜索树（BST）的根节点 root 和整数 k，返回树中第 k 小的元素（k 从 1 计）。示例：输入 root=[3,1,4,null,2]，k=1，输出 1。",
@@ -337,5 +337,7 @@
       "code": "def pathSum(root, targetSum):\n    cnt = {0: 1}                       # 空前缀兜底\n    ans = 0\n    def dfs(node, cur):\n        nonlocal ans\n        if not node: return\n        cur += node.val\n        ans += cnt.get(cur - targetSum, 0)  # 前缀差即目标路径\n        cnt[cur] = cnt.get(cur, 0) + 1\n        dfs(node.left, cur)\n        dfs(node.right, cur)\n        cnt[cur] -= 1               # 回溯撤销本路径\n    dfs(root, 0)\n    return ans",
       "weight": 2
     }
-  ]
+  ],
+  "category": "algo",
+  "sortKey": 180
 }

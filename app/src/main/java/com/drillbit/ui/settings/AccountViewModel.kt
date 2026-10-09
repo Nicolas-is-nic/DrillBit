@@ -97,7 +97,15 @@ class AccountViewModel : ViewModel() {
                 ServiceLocator.syncRepository.login(username.trim(), password)
                 runCatching { ServiceLocator.syncRepository.downloadAndImport() }
                     .onSuccess { result.value = "登录成功，$it" }
-                    .onFailure { result.value = "登录成功（云端暂无快照）" }
+                    .onFailure { e ->
+                        // 区分云端确无快照与导入失败（2026-10-09 review F-2：统一显示「无快照」误导排障）
+                        val msg = e.message.orEmpty()
+                        result.value = if (msg.contains("云端暂无快照")) {
+                            "登录成功（云端暂无快照）"
+                        } else {
+                            "登录成功，但快照导入失败：$msg。请先在题库页同步题库，再回本页用云端恢复"
+                        }
+                    }
             }.onFailure { e ->
                 result.value = when (e) {
                     is UnauthorizedException -> "登录已失效，请重新登录"

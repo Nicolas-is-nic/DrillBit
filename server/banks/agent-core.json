@@ -1,8 +1,8 @@
 {
   "id": "agent-core",
   "name": "Agent 核心与多智能体",
-  "version": 3,
-  "updatedAt": "09-30",
+  "version": 4,
+  "updatedAt": "10-09",
   "questions": [
     {
       "id": "q-0001",
@@ -1446,5 +1446,7 @@
       "explanation": "演进式构建：单 Agent 验证链路、评估先行、按瓶颈拆分且可回滚。起步就堆 Agent 数量只增加失败面，Agent 数量与系统智能不成正比。",
       "weight": 4
     }
-  ]
+  ],
+  "category": "knowledge",
+  "sortKey": 20
 }

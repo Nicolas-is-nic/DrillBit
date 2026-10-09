@@ -61,34 +61,32 @@ class NoteEditViewModel(private val noteId: String) : ViewModel() {
         when (event) {
             is NoteEditEvent.TitleChange -> stateFlow.value = stateFlow.value.copy(title = event.text)
             is NoteEditEvent.ContentChange -> stateFlow.value = stateFlow.value.copy(content = event.text)
-            NoteEditEvent.Save -> save()
+            NoteEditEvent.Save -> Unit // 由导航层 scope.launch { vm.save(); pop }（review F-5）
             NoteEditEvent.DeleteClick -> stateFlow.value = stateFlow.value.copy(deleteConfirmVisible = true)
             NoteEditEvent.DeleteCancel -> stateFlow.value = stateFlow.value.copy(deleteConfirmVisible = false)
-            NoteEditEvent.DeleteConfirm -> delete()
+            NoteEditEvent.DeleteConfirm -> Unit // 同上，导航层等落库再退栈
             else -> Unit // Back / SourceClick 由导航层处理
         }
     }
 
-    private fun save() {
-        viewModelScope.launch {
-            val current = stateFlow.value
-            if (current.title.isBlank() && current.content.isBlank()) return@launch
-            repo.saveNote(
-                noteId = if (noteId == "new") 0L else noteId.toLongOrNull() ?: 0L,
-                title = current.title.ifBlank { "无标题笔记" },
-                content = current.content,
-                source = original?.source ?: "手动",
-                sourceQuestionId = original?.sourceQuestionId,
-                bankName = original?.bankName,
-            )
-        }
+    /** 保存：suspend 供导航层等待落库后再退栈（review F-5：抢跑取消协程曾静默丢笔记） */
+    suspend fun save() {
+        val current = stateFlow.value
+        if (current.title.isBlank() && current.content.isBlank()) return
+        repo.saveNote(
+            noteId = if (noteId == "new") 0L else noteId.toLongOrNull() ?: 0L,
+            title = current.title.ifBlank { "无标题笔记" },
+            content = current.content,
+            source = original?.source ?: "手动",
+            sourceQuestionId = original?.sourceQuestionId,
+            bankName = original?.bankName,
+        )
     }
 
-    private fun delete() {
-        viewModelScope.launch {
-            repo.deleteNote(noteId.toLongOrNull() ?: -1L)
-            stateFlow.value = stateFlow.value.copy(deleteConfirmVisible = false)
-        }
+    /** 删除：同 save，等落库再退栈 */
+    suspend fun delete() {
+        repo.deleteNote(noteId.toLongOrNull() ?: -1L)
+        stateFlow.value = stateFlow.value.copy(deleteConfirmVisible = false)
     }
 
     /** 来源题目跳转目标：返回 bankId（questionId 形如 "bankId:qid"），无来源返回 null */

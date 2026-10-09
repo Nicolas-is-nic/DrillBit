@@ -21,6 +21,10 @@ data class BankEntity(
     val questionCount: Int,
     /** 本地最近一次拉取成功的毫秒时间戳 */
     val lastSyncAt: Long,
+    /** 列表排序键（2026-10-09 v4 迁移新增列）：知识库 10-99 / 算法库 110+，旧数据 9999 垫底 */
+    val sortKey: Int = 9999,
+    /** 分类（v4 迁移新增列）："knowledge" | "algo"，旧数据按 knowledge */
+    val category: String = "knowledge",
 )
 
 /**
@@ -73,21 +77,15 @@ data class ProgressEntity(
 
 /**
  * 错题计数器。计数变化仅发生在重考场景（已拍板）：
+ * 不挂外键（2026-10-09 review F-2）：与 favorites/deleted_questions 同理独立存活——
+ * 云同步换机首登时父题可能尚未同步（外键会令五表导入整体回滚）；
+ * 且题库全量重建 questions 时级联删除会静默清空该库错题。
  * 重考答对 retryCount-1（减到 0 移出），重考答错重置 3；普通刷题不动计数。
  */
 @Entity(
     tableName = "wrong",
-    foreignKeys = [
-        ForeignKey(
-            entity = QuestionEntity::class,
-            parentColumns = ["id"],
-            childColumns = ["questionId"],
-            onDelete = ForeignKey.CASCADE,
-        ),
-    ],
     indices = [Index("bankId")],
-)
-data class WrongEntity(
+)data class WrongEntity(
     /** 对应 questions.id */
     @PrimaryKey val questionId: String,
     val bankId: String,

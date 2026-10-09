@@ -171,6 +171,8 @@ class SyncRepository(
 
     /** 组全量快照 JSON（字段名与方案第三节一致；全程 IO 线程） */
     private suspend fun exportSnapshot(): String = withContext(Dispatchers.IO) {
+        // review F-25：五表读取包事务，避免上传快照跨表不一致后整包覆盖云端
+        return@withContext db.withTransaction {
         val payload = JSONObject()
 
         val notes = JSONArray()
@@ -238,6 +240,7 @@ class SyncRepository(
         payload.put("wrongs", wrongs)
 
         payload.toString()
+        }
     }
 }
 

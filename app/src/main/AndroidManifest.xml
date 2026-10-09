@@ -4,10 +4,6 @@
     <!-- 网络访问：题库拉取、笔记备份、AI 问答 -->
     <uses-permission android:name="android.permission.INTERNET" />
 
-    <!-- S0 验证（临时）：系统通知与精确闹钟，F3 定案后整理 -->
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
-
     <application
         android:name=".DrillBitApplication"
         android:icon="@mipmap/ic_launcher"
@@ -26,10 +22,6 @@
             </intent-filter>
         </activity>
 
-        <!-- S0 验证（临时）：定时通知的闹钟接收器 -->
-        <receiver
-            android:name=".spike.SpikeAlarmReceiver"
-            android:exported="false" />
     </application>
 
 </manifest>

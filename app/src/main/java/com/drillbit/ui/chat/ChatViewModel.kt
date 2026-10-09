@@ -13,7 +13,6 @@ import com.drillbit.data.repo.NoteRepository
 import com.drillbit.ui.components.BannerType
 import com.drillbit.ui.components.BannerUi
 import com.drillbit.ui.components.ChatRole
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -51,9 +50,6 @@ class ChatViewModel(private val questionId: String) : ViewModel() {
         ),
     )
     val state: StateFlow<ChatUiState> = stateFlow.asStateFlow()
-
-    /** 进行中的流式请求（可取消） */
-    private var sendJob: Job? = null
 
     init {
         viewModelScope.launch {
@@ -112,7 +108,7 @@ class ChatViewModel(private val questionId: String) : ViewModel() {
             errorBannerText = null,
         )
 
-        sendJob = viewModelScope.launch {
+        viewModelScope.launch {
             val settings = ServiceLocator.settingsStore.snapshot()
             if (settings.llmUrl.isBlank() || settings.llmKey.isBlank()) {
                 finishStreamWithError("模型未配置，请先到「设置 - 模型配置」填写")

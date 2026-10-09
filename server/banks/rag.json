@@ -1,8 +1,8 @@
 {
   "id": "rag",
   "name": "RAG 与向量检索",
-  "version": 3,
-  "updatedAt": "09-30",
+  "version": 4,
+  "updatedAt": "10-09",
   "questions": [
     {
       "id": "q-0001",
@@ -1606,5 +1606,7 @@
       "explanation": "RAGAS 四指标覆盖生成层（忠实度、相关性）与检索层（上下文精确率、召回率）。BLEU/ROUGE 是上一代文本生成重叠度指标，不属于 RAGAS。",
       "weight": 4
     }
-  ]
+  ],
+  "category": "knowledge",
+  "sortKey": 30
 }

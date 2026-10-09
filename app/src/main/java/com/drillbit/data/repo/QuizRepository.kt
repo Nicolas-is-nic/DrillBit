@@ -6,6 +6,7 @@ import com.drillbit.data.db.FavoriteEntity
 import com.drillbit.data.db.ProgressEntity
 import com.drillbit.data.db.WrongEntity
 import com.drillbit.data.parseAnswers
+import com.drillbit.data.parseRecall
 import com.drillbit.model.QuizSession
 import com.drillbit.model.SessionQuestion
 import com.drillbit.ui.quiz.QuizMode
@@ -42,20 +43,42 @@ class QuizRepository(private val db: DrillBitDatabase) {
 
     /**
      * 单库模式作答落库：推进断点（nextIndex/doneCount）。
-     * 返回更新后的进度实体供 UI 显示。
+     * currentPosition 为「会话内位置」（即过滤已删题后的下标，2026-10-09 review F-3 统一域：
+     * startSingle 按过滤后列表下标消费断点，此前误传 DB 原始 orderIndex，删题后有洞即错位）。
      */
     suspend fun commitSingleProgress(
         session: QuizSession,
-        currentOrderIndex: Int,
+        currentPosition: Int,
         answeredCount: Int,
     ): Unit = withContext(Dispatchers.IO) {
         val bankId = session.bankId ?: return@withContext
         db.progressDao().upsert(
             ProgressEntity(
                 bankId = bankId,
-                nextIndex = (currentOrderIndex + 1).coerceAtMost(session.questions.size),
+                nextIndex = (currentPosition + 1).coerceAtMost(session.questions.size),
                 doneCount = session.startDoneCount + answeredCount,
             ),
+        )
+    }
+
+    /**
+     * 层级专项会话（2026-10-09 分类批次）：按 recall 题层级（P0/P1/P2）过滤，
+     * 临时会话不动断点与 doneCount（断点仍归全库「继续刷题」管）。
+     */
+    suspend fun startTier(bankId: String, tier: String): QuizSession? = withContext(Dispatchers.IO) {
+        val bank = db.bankDao().getById(bankId) ?: return@withContext null
+        val deleted = db.deletedQuestionDao().idsByBank(bankId).toSet()
+        val questions = db.questionDao().getByBank(bankId)
+            .filterNot { it.id in deleted }
+            .filter { parseRecall(it.recallJson)?.tags?.firstOrNull() == tier }
+        if (questions.isEmpty()) return@withContext null
+        QuizSession(
+            mode = QuizMode.TIER,
+            title = "${bank.name} · $tier",
+            questions = questions.map { SessionQuestion(it, bank.name) },
+            startIndex = 0,
+            bankId = null,
+            startDoneCount = 0,
         )
     }
 

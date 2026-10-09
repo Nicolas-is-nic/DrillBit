@@ -1,8 +1,8 @@
 {
   "id": "llm-eng",
   "name": "LLM 应用工程化",
-  "version": 3,
-  "updatedAt": "09-30",
+  "version": 4,
+  "updatedAt": "10-09",
   "questions": [
     {
       "id": "q-0001",
@@ -1286,5 +1286,7 @@
       "explanation": "四层互补而非替代：遇到问题先问性质——知识缺口用 RAG、行为不稳用微调、能力不够用 Agent 工具、临时调控用提示词。多数生产系统是四层组合。",
       "weight": 5
     }
-  ]
+  ],
+  "category": "knowledge",
+  "sortKey": 40
 }

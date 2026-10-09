@@ -15,6 +15,5 @@ data class DigestUiState(
 
 sealed interface DigestEvent {
     data object Regenerate : DigestEvent
-    data object ViewFull : DigestEvent
     data object Back : DigestEvent
 }

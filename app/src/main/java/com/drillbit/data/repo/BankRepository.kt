@@ -117,6 +117,8 @@ class BankRepository(
                     updatedAt = payload.updatedAt,
                     questionCount = payload.questions.size,
                     lastSyncAt = System.currentTimeMillis(),
+                    sortKey = payload.sortKey,
+                    category = payload.category,
                 ),
             )
             db.questionDao().deleteByBank(payload.id)

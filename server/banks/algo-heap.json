@@ -1,8 +1,8 @@
 {
   "id": "algo-heap",
   "name": "算法 · 堆与 TopK",
-  "version": 1,
-  "updatedAt": "10-08",
+  "version": 2,
+  "updatedAt": "10-09",
   "questions": [
     {
       "id": "lc0215",
@@ -70,5 +70,7 @@
       "code": "from heapq import heappush, heappop\n\nclass MedianFinder:\n    def __init__(self):\n        self.lo, self.hi = [], []   # 大根堆(存负)/小根堆\n    def addNum(self, x):\n        heappush(self.lo, -x)\n        heappush(self.hi, -heappop(self.lo))  # 小半顶送大半\n        if len(self.hi) > len(self.lo):\n            heappush(self.lo, -heappop(self.hi))  # 平衡\n    def findMedian(self):\n        return -self.lo[0] if len(self.lo) > len(self.hi) \\\n            else (-self.lo[0] + self.hi[0]) / 2",
       "weight": 2
     }
-  ]
+  ],
+  "category": "algo",
+  "sortKey": 170
 }

@@ -6,7 +6,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.withContext
+import kotlin.coroutines.coroutineContext
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -74,7 +76,10 @@ class LlmClient {
                 if (trimUrl(settings.llmUrl).contains("opencode.ai")) {
                     builder.header("x-opencode-session", sessionId)
                 }
-                client.newCall(builder.build()).execute().use { resp ->
+                // review F-15：协程取消联动 call.cancel（否则退出页面后阻塞读悬挂至下段 SSE 或 300s 超时）
+                val call = client.newCall(builder.build())
+                coroutineContext[Job]?.invokeOnCompletion { cause -> if (cause != null) call.cancel() }
+                call.execute().use { resp ->
                     if (!resp.isSuccessful) {
                         val errBody = resp.body?.string().orEmpty()
                         throw IOException("模型服务返回 ${resp.code}：${errorReason(errBody, resp.code)}")

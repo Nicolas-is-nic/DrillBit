@@ -1,15 +1,15 @@
 # DrillBit 项目知识库
 
 **生成日期**: 2026-09-29
-**最近更新**: 2026-10-08（账号云同步上线 v0.1.0(25)，算法回忆卡题型设计定稿）
+**最近更新**: 2026-10-09（100 题算法题库上线、题库分类与层级专项刷、全项目 review 修复，v0.1.0(28)）
 
 ## 概览
 
 项目：**DrillBit** — 自用安卓刷题 App（通用刷题工具，不绑定主题），配套 Python 后端分发题库。
 
-- 用途：碎片化时间刷选择题强化记忆，算法面试的思路回忆复习（recall 题型设计中，背景：用户转行大模型 Agent 方向，非科班）
+- 用途：碎片化时间刷选择题强化记忆 + 算法面试思路回忆（recall 回忆卡题型已上线，含 100 题大厂高频算法库；背景：用户转行大模型 Agent 方向，非科班）
 - 形态：安卓 App（主体）+ 个人服务器 Python 后端（题库分发、笔记备份、账号云同步）+ iOS 版（独立仓库，SwiftUI 对齐开发）
-- 状态：主体功能全部上线（三题型刷题 / 错题 / 收藏 / 笔记 / AI 问答 / 云同步），最新出包 v0.1.0(25)；后端已部署上线；下一批次为算法回忆卡（recall 题型）
+- 状态：全功能上线（三题型 + recall 四题型刷题 / 错题 / 收藏 / 笔记 / AI 问答 / 账号云同步 / 20 库分类管理），最新出包 v0.1.0(28) 已部署服务器，真机验收中
 - 定位：自用，无上架、无公开注册、无统计图表（红线，见 spec 2.1 非目标）。注意：spec 2.1 原列的「云同步/账号体系」非目标已于 2026-10-07 破例实现（自建单用户账号 + 全量快照多设备同步，方案见 agent_docs/账号与云同步方案.md）
 
 ## 技术栈（已决策，2026-09-29）
@@ -22,7 +22,7 @@
 - JDK 17：`/opt/homebrew/opt/openjdk@17`（gradle.properties 配 org.gradle.java.home）
 - Android SDK：`~/Library/Android/sdk`（local.properties 配 sdk.dir）
 
-已引依赖（版本目录 gradle/libs.versions.toml 单一来源）：OkHttp 4.12（网络/SSE 流式）、org.json（JSON，系统自带）、markdown-renderer-m3 0.28（笔记/AI 回答渲染）、material-icons-extended。待引：Coil（recall 批次题图加载，需用户确认）。
+已引依赖（版本目录 gradle/libs.versions.toml 单一来源）：OkHttp 4.12（网络/SSE 流式）、org.json（JSON，系统自带）、markdown-renderer-m3 0.28（笔记/AI 回答渲染）、material-icons-extended、Coil 2.7.0（recall 题图加载与全屏缩放）。
 
 **后端**：Python FastAPI 单文件（`server/main.py`），已部署到用户个人服务器（start.sh 常驻非 systemd + https 反代 + 双轨鉴权[静态 token 或账号 token] + SQLite 账号与快照存储；实际部署目录与启动方式以 `agent_docs/DrillBit服务器部署指南.md` 顶部核实说明为准）。
 
@@ -30,16 +30,19 @@
 
 - `docs/design-docs/drillbit-app/spec.md`: 需求与系统设计（1-5 章完成：背景/目标/需求/架构/备选方案）
 - `docs/design-docs/drillbit-app/tasks.md`: 实施任务清单（阶段 0 已完成，阶段 2 待建）
-- `server/main.py` + `server/banks/`: 后端服务与题库文件目录（六个真实题库 JSON 已上线，部署在服务器，仓库内存源码）
+- `server/main.py` + `server/banks/`: 后端服务与题库文件目录（20 库已上线：6 个知识库 + 14 个 algo-* 算法专题库；题图在 banks/img/{库id}/；部署在服务器，仓库内存源码）
 - `agent_docs/DrillBit服务器部署指南.md`: 服务器部署/运维指南（题库更新流程、token 轮换、排障）
 - `app/src/main/assets/test_banks.json`: 本地测试题库（未配置服务器时点同步即导入，开发期路径）
-- `agent_docs/题库JSON格式规范.md`: 题库 JSON 出品规范（三题型示例、校验规则、自检清单，可整份喂给出题大模型；recall 题型章节待补）
+- `agent_docs/题库JSON格式规范.md`: 题库 JSON 出品规范（四题型：single/multi/judge/recall；校验规则、自检清单，可整份喂给出题大模型；注意 tags 首条为层级 P0/P1/P2，测试库 version 恒 0）
 - `agent_docs/题库更新操作手册.md`: 服务器题库日常更新 runbook（ssh/scp 流程、三场景、排障，含实际连接与路径）
 - `agent_docs/双模型分工开发方案.md`: 双模型协作唯一契约源（路由/色值/组件/UiState/Event，阶段 1 交付物）
 - `agent_docs/页面设计完整方案.html`: 视觉唯一基准（22 屏，已按阶段 1 实现回写定稿）
 - `agent_docs/账号与云同步方案.md`: 账号与云同步唯一方案源（快照五类数据字段为 iOS 对齐基准）
 - `agent_docs/算法回忆卡UI方案.html`: recall 题型交互稿 v4（默想/揭示/自评三阶段、题图、代码 segmented）
-- `agent_docs/算法回忆卡实现方案.md`: recall 题型实现方案（schema/契约变更/图片同步/菜单方案，待拍板两项）
+- `agent_docs/算法回忆卡实现方案.md`: recall 题型实现方案（已全部落地，留档）
+- `agent_docs/算法题库生成规范.md`: 100 题算法库的唯一事实源清单与生成管线（doocs 题图、校验规则）
+- `agent_docs/算法题库review指引.md` / `算法题库review报告.md`: 题库内容 review 的指引与结果（8 处已修复）
+- `agent_docs/全项目代码review报告-2026-10-09.md` / `review问题处理说明-2026-10-09.md`: 全项目 review 与处理结论（修 19 缓 9，暂缓项含激活条件）
 - `agent_docs/iOS迁移完整方案.md`: iOS 版方案（独立仓库）
 - `agent_docs/阶段1-UI交接说明与遗留问题.md`: UI 模型交接文档（契约缺口、工程坑、阶段 2 接线清单）
 - `agent_docs/安卓开发通用经验.md`: 跨项目安卓开发经验（环境、部署、架构模式、技术红线），必读
@@ -87,10 +90,10 @@ Mac 构建 → Finder 打开产物 → 微信/隔空投送传手机 → 卓易�
 
 - 已完成批次（按时间）：多选/判断题型与统一确认作答（v18）→ AI 多轮上下文与按消息保存、删题收藏与我的收藏题集、Room v2（v24）→ 账号登录与多设备云同步（v25，2026-10-08 提交）：快照五类数据（notes/favorites/deletedQuestions/progress/wrongs）上传下载、冷启动静默拉取、云端新快照覆盖警告、服务端 SQLite 账号与双轨鉴权
 - 后端：FastAPI 已部署上线（题库分发 + 笔记备份 + 账号云同步 + https）
-- 当前批次：算法回忆卡（recall 题型）——2026-10-08 已拍板（菜单方案甲：错题 Tab 改名「复习」图标 Replay；Coil 2.7.0 引入）并完成开发：契约 7.4 扩展（RECALL/RecallUi/RememberedClick/ForgotClick）、Room v3（questions.recallJson）、题图随库同步落盘 filesDir/img/{bankId}/、服务器 /api/img 端点、刷题页 recall 三阶段渲染（默想/揭示/自评/代码卡 segmented/全屏缩放题图）、AI 上下文 recall 分支、本地测试库 v3 与服务器 algo-stack 库（各含 2 道 recall 题）；出包 versionCode 26 待真机验收
-- 日常维护：服务器上改题库 JSON（version+1 即生效）、App 内同步、出题攒笔记、多设备间「立即同步」
+- 当前批次：算法回忆卡（recall 题型）——2026-10-08 已拍板（菜单方案甲：错题 Tab 改名「复习」图标 Replay；Coil 2.7.0 引入）并完成开发：契约 7.4 扩展（RECALL/RecallUi/RememberedClick/ForgotClick）、Room v3（questions.recallJson）、题图随库同步落盘 filesDir/img/{bankId}/、服务器 /api/img 端点、刷题页 recall 三阶段渲染（默想/揭示/自评/代码卡 segmented/全屏缩放题图）、AI 上下文 recall 分支、随后 2026-10-09 批次：100 题大厂高频算法题库上线（14 个 algo-* 专题库 + 58 张官方题图，P0/P1/P2 分层，独立模型 review 修复 8 处），题库页知识库/算法库双页签（sortKey/category + Room v4）、算法库详情页层级专项刷（QuizMode.TIER）、全项目 review 修复（Room v5 wrong 去外键、删题入口接线、断点域统一、笔记保存竞态等）
+- 日常维护：服务器上改题库 JSON（version+1 即生效）、App 内同步、出题攒笔记、多设备间账号页「备份到云端 / 用云端恢复」（后上传覆盖，两动作均二次确认）
 - keystore 与 keystore.properties 不入 git（用户自行备份），丢失 = 无法覆盖升级
 - 后续迭代：判断题双列大按钮渲染（现复用单选纵向，已拍板后议）、笔记搜索（触发条件见 spec 2.1）、流式以外的体验优化按需推进
 - 双模型协作机制：UI 模型只写 ui/ 层照契约实现；coding 模型实现契约另一侧（ViewModel 产 state 消费 event）；契约变更必须先改分工文档再改代码
 - 出包纪律：每次改动 versionCode+1，装机后先核对设置页版本号再验收；**iOS 版（独立仓库 ~/pycharm-workspace/DrillBit-iOS，SwiftUI 原生重写，方案见 agent_docs/iOS迁移完整方案.md）版本号与安卓完全对齐**：Marketing Version=versionName、Build=versionCode，安卓为基准源，基准以 app/build.gradle.kts 代码为准
-- 真机联调遗留：崩溃/异常现象优先查 crash_last.txt 弹窗与设置页「崩溃日志」入口；修复后 versionCode 递增（当前 26，recall 批次）
+- 真机联调遗留：崩溃/异常现象优先查 crash_last.txt 弹窗与设置页「崩溃日志」入口；修复后 versionCode 递增（当前 28 已出包并部署服务器，含分类/层级批次与 review 修复）。下一批候选见 agent_docs/review问题处理说明-2026-10-09.md 暂缓项（错题/收藏详情增强、详情页检查更新接线、数据访问 JOIN 化等，各含激活条件）

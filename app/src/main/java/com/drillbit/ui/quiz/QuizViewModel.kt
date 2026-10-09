@@ -35,6 +35,9 @@ class QuizViewModel(private val mode: QuizMode, private val bankId: String) : Vi
     /** 会话内收藏 id 集合（F2）：会话开始时加载一次，星标 toggle 时增量维护 */
     private var favoriteIds: Set<String> = emptySet()
 
+    /** 作答/自评在途标志（review F-23：DB 写完才置 ANSWERED，快速双击窗口内曾可双跑） */
+    @Volatile private var answering = false
+
     private val stateFlow = MutableStateFlow(
         QuizUiState(
             mode = mode,
@@ -66,7 +69,7 @@ class QuizViewModel(private val mode: QuizMode, private val bankId: String) : Vi
     private suspend fun loadSession() {
         val s = when (mode) {
             QuizMode.SINGLE -> repo.startSingle(bankId)
-            QuizMode.MIX, QuizMode.RETRY, QuizMode.FAVORITE -> SessionHolder.take()
+            QuizMode.MIX, QuizMode.RETRY, QuizMode.FAVORITE, QuizMode.TIER -> SessionHolder.take()
         }
         session = s
         if (s == null || s.questions.isEmpty()) {
@@ -157,10 +160,12 @@ class QuizViewModel(private val mode: QuizMode, private val bankId: String) : Vi
     /** recall 自评：记住了=答对（直接下一题）；没记住=答错（横幅+下一题）。与选择题共用错题/断点路径 */
     private fun selfEval(remembered: Boolean) {
         val s = session ?: return
-        if (stateFlow.value.phase != QuizPhase.ANSWERED) return
+        if (stateFlow.value.phase != QuizPhase.ANSWERED || answering) return
+        answering = true
         val sq = s.questions.getOrNull(cursor) ?: return
         val q: QuestionEntity = sq.entity
         viewModelScope.launch {
+            try {
             if (remembered) {
                 correctCount++
                 if (mode == QuizMode.RETRY) {
@@ -168,7 +173,7 @@ class QuizViewModel(private val mode: QuizMode, private val bankId: String) : Vi
                     ServiceLocator.wrongRepository.recordRetryResult(q.id, q.bankId, true)
                 }
                 if (mode == QuizMode.SINGLE) {
-                    repo.commitSingleProgress(s, q.orderIndex, answeredCountInSession())
+                    repo.commitSingleProgress(s, cursor, answeredCountInSession())
                 }
                 next()
                 return@launch
@@ -186,7 +191,7 @@ class QuizViewModel(private val mode: QuizMode, private val bankId: String) : Vi
                 wrongBanner = "已加入错题集 · 重考计数 $countText"
             }
             if (mode == QuizMode.SINGLE) {
-                repo.commitSingleProgress(s, q.orderIndex, answeredCountInSession())
+                repo.commitSingleProgress(s, cursor, answeredCountInSession())
             }
             stateFlow.value = stateFlow.value.copy(
                 answered = stateFlow.value.answered?.copy(
@@ -194,12 +199,16 @@ class QuizViewModel(private val mode: QuizMode, private val bankId: String) : Vi
                     countBannerText = countBanner,
                 ),
             )
+            } finally {
+                answering = false
+            }
         }
     }
 
     private fun answer(selectedIndices: List<Int>) {
         val s = session ?: return
-        if (stateFlow.value.phase == QuizPhase.ANSWERED) return
+        if (stateFlow.value.phase == QuizPhase.ANSWERED || answering) return
+        answering = true
         val sq = s.questions.getOrNull(cursor) ?: return
         val q: QuestionEntity = sq.entity
         val correctIndices = repo.correctIndices(q.optionsJson, q.answersJson)
@@ -207,6 +216,7 @@ class QuizViewModel(private val mode: QuizMode, private val bankId: String) : Vi
         if (isCorrect) correctCount++
 
         viewModelScope.launch {
+            try { // review F-23：与 finally 配对，双击窗口守卫
             var wrongBanner: String? = null
             var countBanner: String? = null
             if (mode == QuizMode.RETRY) {
@@ -225,7 +235,7 @@ class QuizViewModel(private val mode: QuizMode, private val bankId: String) : Vi
                 wrongBanner = "已加入错题集 · 重考计数 $countText"
             }
             if (mode == QuizMode.SINGLE) {
-                repo.commitSingleProgress(s, q.orderIndex, answeredCountInSession())
+                repo.commitSingleProgress(s, cursor, answeredCountInSession())
             }
             stateFlow.value = stateFlow.value.copy(
                 phase = QuizPhase.ANSWERED,
@@ -239,6 +249,9 @@ class QuizViewModel(private val mode: QuizMode, private val bankId: String) : Vi
                 ),
                 selectedIndices = emptyList(),
             )
+            } finally {
+                answering = false
+            }
         }
     }
 
@@ -289,7 +302,8 @@ class QuizViewModel(private val mode: QuizMode, private val bankId: String) : Vi
         val s = session ?: return
         val sq = s.questions.getOrNull(cursor) ?: return
         val q = sq.entity
-        val currentIndex = if (mode == QuizMode.SINGLE) q.orderIndex + 1 else cursor + 1
+        // 显示序号统一用会话内位置（与断点过滤后下标同域，review F-3）
+        val currentIndex = cursor + 1
         // recall 题：recallJson 解析出弱提示标签、题图本地路径与揭示层数据
         val recallData = parseRecall(q.recallJson)
         stateFlow.value = QuizUiState(
@@ -337,6 +351,7 @@ class QuizViewModel(private val mode: QuizMode, private val bankId: String) : Vi
         QuizMode.MIX -> "混合卷"
         QuizMode.RETRY -> "错题重考"
         QuizMode.FAVORITE -> "我的收藏"
+        QuizMode.TIER -> "层级刷题"
     }
 
     class Factory(

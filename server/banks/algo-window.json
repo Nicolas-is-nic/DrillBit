@@ -1,8 +1,8 @@
 {
   "id": "algo-window",
   "name": "算法 · 滑动窗口",
-  "version": 1,
-  "updatedAt": "10-08",
+  "version": 2,
+  "updatedAt": "10-09",
   "questions": [
     {
       "id": "lc0003",
@@ -25,29 +25,6 @@
       "pseudocode": "窗口集合 = 空集\nl = 0, 最长 = 0\nfor r in 0..len(s)-1:\n    while s[r] 在 窗口集合:\n        移除 s[l]; l += 1\n    加入 s[r]\n    最长 = max(最长, r-l+1)\nreturn 最长",
       "code": "def lengthOfLongestSubstring(s):\n    win = set()\n    l = best = 0\n    for r, c in enumerate(s):\n        while c in win:          # 遇重则左端收缩\n            win.remove(s[l])\n            l += 1\n        win.add(c)\n        best = max(best, r - l + 1)\n    return best",
       "weight": 5
-    },
-    {
-      "id": "lc0076",
-      "type": "recall",
-      "stem": "LC 76 · 最小覆盖子串：给你字符串 s 与 t，返回 s 中涵盖 t 所有字符的最小子串，不存在时返回空串。t 中重复字符必须在子串中出现不少于相应次数，答案保证唯一。示例：输入 s = \"ADOBECODEBANC\"，t = \"ABC\"，输出 \"BANC\"。",
-      "tags": [
-        "P1",
-        "Hard"
-      ],
-      "approach": {
-        "strategy": "需求计数加滑动窗口，欠账清零时收缩",
-        "steps": [
-          "need 统计 t 各字符需求，missing 为尚未满足的字符种类数",
-          "r 右移纳入字符并递减需求，某字符需求减到 0 时 missing 减一",
-          "missing 为 0 即窗口全覆盖，收缩 l：每轮先记录更短窗口，再释放 s[l]，需求回正时 missing 加一",
-          "窗口重新欠账后回到扩张，扫描结束取最短窗口"
-        ],
-        "timeCx": "O(n+m)",
-        "spaceCx": "O(字符集)"
-      },
-      "pseudocode": "need = t 的计数表, missing = 需求字符种类数\nl = 0\nfor r in 0..len(s)-1:\n    need[s[r]] -= 1\n    if need[s[r]] == 0: missing -= 1\n    while missing == 0:\n        记录更短窗口\n        need[s[l]] += 1\n        if need[s[l]] > 0: missing += 1\n        l += 1\nreturn 最短窗口或空串",
-      "code": "from collections import Counter\ndef minWindow(s, t):\n    need = Counter(t)\n    missing = len(need)              # 还差几种字符\n    l, start, size = 0, 0, float('inf')\n    for r, c in enumerate(s):\n        need[c] -= 1\n        if need[c] == 0: missing -= 1\n        while missing == 0:          # 已全覆盖，收缩左端\n            if r - l + 1 < size:\n                start, size = l, r - l + 1   # 记录最短窗口\n            need[s[l]] += 1\n            if need[s[l]] > 0: missing += 1  # 左端字符仍被需要\n            l += 1\n    return '' if size == float('inf') else s[start:start + size]",
-      "weight": 3
     },
     {
       "id": "lc0239",
@@ -73,6 +50,29 @@
       "weight": 4
     },
     {
+      "id": "lc0076",
+      "type": "recall",
+      "stem": "LC 76 · 最小覆盖子串：给你字符串 s 与 t，返回 s 中涵盖 t 所有字符的最小子串，不存在时返回空串。t 中重复字符必须在子串中出现不少于相应次数，答案保证唯一。示例：输入 s = \"ADOBECODEBANC\"，t = \"ABC\"，输出 \"BANC\"。",
+      "tags": [
+        "P1",
+        "Hard"
+      ],
+      "approach": {
+        "strategy": "需求计数加滑动窗口，欠账清零时收缩",
+        "steps": [
+          "need 统计 t 各字符需求，missing 为尚未满足的字符种类数",
+          "r 右移纳入字符并递减需求，某字符需求减到 0 时 missing 减一",
+          "missing 为 0 即窗口全覆盖，收缩 l：每轮先记录更短窗口，再释放 s[l]，需求回正时 missing 加一",
+          "窗口重新欠账后回到扩张，扫描结束取最短窗口"
+        ],
+        "timeCx": "O(n+m)",
+        "spaceCx": "O(字符集)"
+      },
+      "pseudocode": "need = t 的计数表, missing = 需求字符种类数\nl = 0\nfor r in 0..len(s)-1:\n    need[s[r]] -= 1\n    if need[s[r]] == 0: missing -= 1\n    while missing == 0:\n        记录更短窗口\n        need[s[l]] += 1\n        if need[s[l]] > 0: missing += 1\n        l += 1\nreturn 最短窗口或空串",
+      "code": "from collections import Counter\ndef minWindow(s, t):\n    need = Counter(t)\n    missing = len(need)              # 还差几种字符\n    l, start, size = 0, 0, float('inf')\n    for r, c in enumerate(s):\n        need[c] -= 1\n        if need[c] == 0: missing -= 1\n        while missing == 0:          # 已全覆盖，收缩左端\n            if r - l + 1 < size:\n                start, size = l, r - l + 1   # 记录最短窗口\n            need[s[l]] += 1\n            if need[s[l]] > 0: missing += 1  # 左端字符仍被需要\n            l += 1\n    return '' if size == float('inf') else s[start:start + size]",
+      "weight": 3
+    },
+    {
       "id": "lc0438",
       "type": "recall",
       "stem": "LC 438 · 找到字符串中所有字母异位词：给你两个字符串 s 与 p，找到 s 中 p 的异位词子串，返回这些子串的起始索引列表，答案顺序不限。字符串仅含小写英文字母。示例：输入 s = \"cbaebabacd\"，p = \"abc\"，输出 [0,6]。",
@@ -94,5 +94,7 @@
       "code": "from collections import Counter\ndef findAnagrams(s, p):\n    need, cnt = Counter(p), Counter()\n    l, res = 0, []\n    for r, c in enumerate(s):\n        cnt[c] += 1\n        if r - l + 1 > len(p):      # 窗口超长，左端移出\n            cnt[s[l]] -= 1\n            if not cnt[s[l]]:\n                del cnt[s[l]]       # 清零删键，保证计数可比\n            l += 1\n        if cnt == need:             # 计数一致即异位词\n            res.append(l)\n    return res",
       "weight": 3
     }
-  ]
+  ],
+  "category": "algo",
+  "sortKey": 140
 }

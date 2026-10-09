@@ -22,6 +22,7 @@
 #   pip install fastapi uvicorn
 #   DRILLBIT_TOKEN=你的token uvicorn main:app --host 0.0.0.0 --port 8000
 
+import asyncio
 import getpass
 import hashlib
 import hmac
@@ -163,10 +164,18 @@ def load_bank(bank_id: str) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-@app.get("/api/index")
-async def api_index(_: None = Depends(check_token_dual)) -> JSONResponse:
+# 目录元信息缓存（review F-16：原每次请求全量解析 MB 级 JSON 且同步 IO 阻塞事件循环；
+# 按「文件名+mtime+size」指纹失效，覆盖同名文件更新也能感知）
+_INDEX_CACHE: dict = {"fingerprint": None, "items": []}
+
+
+def bank_index_items() -> list:
+    entries = sorted(BANKS_DIR.glob("*.json"))
+    fingerprint = tuple((p.name, p.stat().st_mtime_ns, p.stat().st_size) for p in entries)
+    if _INDEX_CACHE["fingerprint"] == fingerprint:
+        return _INDEX_CACHE["items"]
     items = []
-    for path in sorted(BANKS_DIR.glob("*.json")):
+    for path in entries:
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
             items.append(
@@ -176,12 +185,21 @@ async def api_index(_: None = Depends(check_token_dual)) -> JSONResponse:
                     "version": data["version"],
                     "updatedAt": data.get("updatedAt", ""),
                     "questionCount": len(data.get("questions", [])),
+                    "sortKey": data.get("sortKey", 9999),
+                    "category": data.get("category", "knowledge"),
                 }
             )
         except (json.JSONDecodeError, KeyError):
             # 单个题库文件损坏不影响目录整体返回
             continue
-    return JSONResponse(items)
+    _INDEX_CACHE["fingerprint"] = fingerprint
+    _INDEX_CACHE["items"] = items
+    return items
+
+
+@app.get("/api/index")
+async def api_index(_: None = Depends(check_token_dual)) -> JSONResponse:
+    return JSONResponse(bank_index_items())
 
 
 @app.get("/api/banks/{bank_id}")
@@ -238,7 +256,7 @@ async def api_login(request: Request) -> JSONResponse:
         ).fetchone()
     if row is None or not hmac.compare_digest(row["password_hash"], hash_password(password, row["salt"])):
         # 慢化失败响应，降低爆破收益
-        time.sleep(0.3)
+        await asyncio.sleep(0.3)  # review F-19：不阻塞事件循环
         raise HTTPException(status_code=401, detail="用户名或密码错误")
     # 每次登录轮换 token（多端登录时旧端会 401，重新登录即可）
     new_token = secrets.token_hex(32)
@@ -293,7 +311,9 @@ async def api_sync_download(username: str = Depends(check_account)) -> JSONRespo
 async def api_sync_meta(username: str = Depends(check_account)) -> JSONResponse:
     with db() as conn:
         row = conn.execute(
-            "SELECT payload, device, uploaded_at FROM snapshots WHERE username = ?", (username,)
+            # review F-17：length() 取字节数，不整包读出含全部笔记正文的 payload
+            "SELECT length(payload) AS bytes, device, uploaded_at FROM snapshots WHERE username = ?",
+            (username,),
         ).fetchone()
     if row is None:
         raise HTTPException(status_code=404, detail="云端暂无快照")

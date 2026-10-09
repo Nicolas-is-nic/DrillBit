@@ -124,7 +124,7 @@ class MainActivity : ComponentActivity() {
             }
             val onDarkModeChange: (Boolean) -> Unit = { on ->
                 darkTheme = on
-                lifecycleScope.launch { ServiceLocator.settingsStore.setDarkMode(on) }
+                lifecycleScope.launch { runCatching { ServiceLocator.settingsStore.setDarkMode(on) } } // review F-26
             }
             // 崩溃文本读后暂存（设置页「有崩溃日志」与重新查看入口用）
             DrillBitApplication.lastCrashLog = crashText
@@ -211,7 +211,9 @@ fun DrillBitApp(
                             is BankListEvent.BankClick ->
                                 navController.navigate("bankDetail/${event.bankId}")
 
-                            BankListEvent.MixClick -> navController.navigate("mixConfig")
+                            is BankListEvent.MixClick ->
+                                navController.navigate("mixConfig?category=${event.category}")
+                            is BankListEvent.CategoryChange -> vm.onEvent(event)
                             else -> vm.onEvent(event)
                         }
                     },
@@ -307,6 +309,11 @@ fun DrillBitApp(
                                 navController.navigate("quiz?mode=single&bankId=$bankId")
                             }
 
+                            is BankDetailEvent.TierStartClick -> scope.launch {
+                                if (vm.startTier(event.tier)) {
+                                    navController.navigate("quiz?mode=tier")
+                                }
+                            }
                             BankDetailEvent.Back -> navController.popBackStack()
                             BankDetailEvent.DeleteConfirm -> {
                                 vm.onEvent(event)
@@ -317,8 +324,12 @@ fun DrillBitApp(
                     },
                 )
             }
-            composable("mixConfig") {
-                val vm: MixConfigViewModel = viewModel()
+            composable(
+                route = "mixConfig?category={category}",
+                arguments = listOf(navArgument("category") { defaultValue = "knowledge" }),
+            ) { entry ->
+                val mixCategory = entry.arguments?.getString("category") ?: "knowledge"
+                val vm: MixConfigViewModel = viewModel(factory = MixConfigViewModel.Factory(mixCategory))
                 val state by vm.state.collectAsState()
                 val scope = rememberCoroutineScope()
                 MixConfigScreen(
@@ -348,6 +359,7 @@ fun DrillBitApp(
                     "mix" -> QuizMode.MIX
                     "retry" -> QuizMode.RETRY
                     "favorite" -> QuizMode.FAVORITE
+                    "tier" -> QuizMode.TIER
                     else -> QuizMode.SINGLE
                 }
                 val bankId = entry.arguments?.getString("bankId").orEmpty()
@@ -374,17 +386,18 @@ fun DrillBitApp(
                     factory = NoteEditViewModel.Factory(noteId),
                 )
                 val state by vm.state.collectAsState()
+                val noteScope = rememberCoroutineScope()
                 NoteEditScreen(
                     state = state,
                     onEvent = { event ->
                         when (event) {
                             NoteEditEvent.Back -> navController.popBackStack()
-                            NoteEditEvent.Save -> {
-                                vm.onEvent(event)
+                            NoteEditEvent.Save -> noteScope.launch {
+                                vm.save()          // 等落库再退栈（review F-5：竞态曾静默丢笔记）
                                 navController.popBackStack()
                             }
-                            NoteEditEvent.DeleteConfirm -> {
-                                vm.onEvent(event)
+                            NoteEditEvent.DeleteConfirm -> noteScope.launch {
+                                vm.delete()
                                 navController.popBackStack()
                             }
                             NoteEditEvent.SourceClick -> {

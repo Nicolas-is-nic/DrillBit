@@ -323,6 +323,15 @@ private fun QuestionContent(
                 )
             }
         }
+        // 删题入口（F1，2026-10-09 review 修复：v24 起漏接线，答后常驻）
+        Spacer(Modifier.height(10.dp))
+        DBButton(
+            text = "删除本题",
+            onClick = { onEvent(QuizEvent.DeleteClick) },
+            modifier = Modifier.fillMaxWidth(),
+            type = DBButtonType.GHOST,
+            heightDp = 38.dp,
+        )
     }
     Spacer(Modifier.height(16.dp))
 }
@@ -418,6 +427,15 @@ private fun RecallContent(
                 type = BannerType.WARN,
             )
         }
+        // 删题入口（F1，2026-10-09 review 修复）
+        Spacer(Modifier.height(10.dp))
+        DBButton(
+            text = "删除本题",
+            onClick = { onEvent(QuizEvent.DeleteClick) },
+            modifier = Modifier.fillMaxWidth(),
+            type = DBButtonType.GHOST,
+            heightDp = 38.dp,
+        )
     }
     Spacer(Modifier.height(16.dp))
 }
@@ -436,7 +454,7 @@ private fun QuestionImages(images: List<String>, onImageClick: (String) -> Unit)
                     .fillMaxWidth()
                     .padding(bottom = 8.dp)
                     .clip(shape)
-                    .background(Color.White)
+                    .background(colors.imgBg)
                     .border(1.dp, colors.line, shape)
                     .clickable { onImageClick(path) }
                     .padding(horizontal = 10.dp, vertical = 9.dp),
@@ -482,6 +500,7 @@ private fun QuestionImages(images: List<String>, onImageClick: (String) -> Unit)
 /** 全屏题图：双指缩放平移，单击遮罩或图片关闭 */
 @Composable
 private fun ImageFullscreenOverlay(path: String, onDismiss: () -> Unit) {
+    val colors = dbColors()
     var scale by remember { mutableFloatStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
     val transformState = rememberTransformableState { zoomChange, panChange, _ ->
@@ -514,7 +533,7 @@ private fun ImageFullscreenOverlay(path: String, onDismiss: () -> Unit) {
         Text(
             text = "双指缩放 · 单击关闭",
             style = MaterialTheme.typography.labelSmall,
-            color = Color.White.copy(alpha = 0.75f),
+            color = colors.imgBg.copy(alpha = 0.75f),
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 28.dp),
