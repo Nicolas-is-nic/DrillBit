@@ -1,13 +1,13 @@
 {
   "id": "algo-stack",
   "name": "算法 · 栈与队列",
-  "version": 3,
-  "updatedAt": "10-09",
+  "version": 4,
+  "updatedAt": "2026-10-09",
   "questions": [
     {
       "id": "lc0020",
       "type": "recall",
-      "stem": "LC 20 · 有效的括号：给定只含字符 '()[]{}' 的字符串 s，判断是否有效：左括号必须以正确顺序被相同类型的右括号闭合。长度 1 到 10^4。示例：输入 s=\"()[]{}\"，输出 true；输入 s=\"(]\"，输出 false。",
+      "stem": "LC 20 · 有效的括号：\n\n给定一个只包括 '('，')'，'{'，'}'，'['，']' 的字符串 s，判断字符串是否有效。\n\n有效字符串需满足：\n\n- 左括号必须用相同类型的右括号闭合。\n- 左括号必须以正确的顺序闭合。\n- 每个右括号都有一个对应的相同类型的左括号。\n\n示例 1：\n\n输入：s = \"()\"\n\n输出：true\n\n示例 2：\n\n输入：s = \"()[]{}\"\n\n输出：true\n\n示例 3：\n\n输入：s = \"(]\"\n\n输出：false\n\n示例 4：\n\n输入：s = \"([])\"\n\n输出：true\n\n示例 5：\n\n输入：s = \"([)]\"\n\n输出：false\n\n提示：\n\n- 1 <= s.length <= 10^4\n- s 仅由括号 '()[]{}' 组成",
       "tags": [
         "P0",
         "Easy"
@@ -29,7 +29,7 @@
     {
       "id": "lc0739",
       "type": "recall",
-      "stem": "LC 739 · 每日温度：给定每日温度数组 temperatures，对每一天求还需等待几天才出现更高温度；等不到记 0。长度 1 到 10^5，温度 30 到 100。示例：输入 [73,74,75,71,69,72,76,73]，输出 [1,1,4,2,1,1,0,0]。",
+      "stem": "LC 739 · 每日温度：\n\n给定一个整数数组 temperatures，表示每天的温度，返回一个数组 answer，其中 answer[i] 是指对于第 i 天，下一个更高温度出现在几天后。如果气温在这之后都不会升高，请在该位置用 0 来代替。\n\n示例 1:\n输入: temperatures = [73,74,75,71,69,72,76,73]\n输出: [1,1,4,2,1,1,0,0]\n\n示例 2:\n输入: temperatures = [30,40,50,60]\n输出: [1,1,1,0]\n\n示例 3:\n输入: temperatures = [30,60,90]\n输出: [1,1,0]\n\n提示：\n\n- 1 <= temperatures.length <= 10^5\n- 30 <= temperatures[i] <= 100",
       "tags": [
         "P0",
         "Medium"
@@ -51,7 +51,7 @@
     {
       "id": "lc0155",
       "type": "recall",
-      "stem": "LC 155 · 最小栈：设计支持 push、pop、top 与 getMin 操作的栈，getMin 需在常数时间内取得栈内最小元素。pop 与 top 调用时栈保证非空。示例：MinStack 依次 push(-2)、push(0)、push(-3)，getMin() 返回 -3，pop 后 top() 返回 0、getMin() 返回 -2。",
+      "stem": "LC 155 · 最小栈：\n\n设计一个支持 push，pop，top 操作，并能在常数时间内检索到最小元素的栈。\n\n实现 MinStack 类:\n\n- MinStack() 初始化堆栈对象。\n- void push(int value) 将元素 value 推入堆栈。\n- void pop() 删除堆栈顶部的元素。\n- int top() 获取堆栈顶部的元素。\n- int getMin() 获取堆栈中的最小元素。\n\n示例 1:\n输入：\n[\"MinStack\",\"push\",\"push\",\"push\",\"getMin\",\"pop\",\"top\",\"getMin\"]\n[[],[-2],[0],[-3],[],[],[],[]]\n输出：\n[null,null,null,null,-3,null,0,-2]\nMinStack minStack = new MinStack();\nminStack.push(-2);\nminStack.push(0);\nminStack.push(-3);\nminStack.getMin(); --> 返回 -3.\nminStack.pop();\nminStack.top(); --> 返回 0.\nminStack.getMin(); --> 返回 -2.\n\n提示：\n\n- -2^31 <= val <= 2^31 - 1\n- pop、top 和 getMin 操作总是在 非空栈 上调用\n- push, pop, top, and getMin最多被调用 3 * 10^4 次",
       "tags": [
         "P1",
         "Medium"
@@ -73,7 +73,7 @@
     {
       "id": "lc0084",
       "type": "recall",
-      "stem": "LC 84 · 柱状图中最大的矩形：给定 n 个非负整数表示柱状图中各柱高度（每柱宽度为 1），求能勾勒出的矩形最大面积。n 为 1 到 10^5。示例：输入 heights=[2,1,5,6,2,3]，输出 10（高 5 与 6 两柱构成 5×2 的矩形）。",
+      "stem": "LC 84 · 柱状图中最大的矩形：\n\n给定 n 个非负整数，用来表示柱状图中各个柱子的高度。每个柱子彼此相邻，且宽度为 1。\n\n求在该柱状图中，能够勾勒出来的矩形的最大面积。\n\n示例 1:\n输入：heights = [2,1,5,6,2,3]\n输出：10\n解释：最大的矩形为图中红色区域，面积为 10\n\n示例 2：\n输入： heights = [2,4]\n输出： 4\n\n提示：\n\n- 1 <= heights.length <=10^5\n- 0 <= heights[i] <= 10^4",
       "tags": [
         "P1",
         "Hard"
@@ -99,7 +99,7 @@
     {
       "id": "lc0394",
       "type": "recall",
-      "stem": "LC 394 · 字符串解码：给定编码字符串 s，规则 k[encoded_string] 表示方括号内的字符串重复 k 次；k 为正整数，括号可嵌套，输入保证合法。解码并返回原文。示例：输入 s=\"3[a]2[bc]\"，输出 \"aaabcbc\"；输入 s=\"3[a2[c]]\"，输出 \"accaccacc\"。",
+      "stem": "LC 394 · 字符串解码：\n\n给定一个经过编码的字符串，返回它解码后的字符串。\n\n编码规则为: k[encoded_string]，表示其中方括号内部的 encoded_string 正好重复 k 次。注意 k 保证为正整数。\n\n你可以认为输入字符串总是有效的；输入字符串中没有额外的空格，且输入的方括号总是符合格式要求的。\n\n此外，你可以认为原始数据不包含数字，所有的数字只表示重复的次数 k，例如不会出现像 3a 或 2[4] 的输入。\n\n测试用例保证输出的长度不会超过 10^5。\n\n示例 1：\n输入：s = \"3[a]2[bc]\"\n输出：\"aaabcbc\"\n\n示例 2：\n输入：s = \"3[a2[c]]\"\n输出：\"accaccacc\"\n\n示例 3：\n输入：s = \"2[abc]3[cd]ef\"\n输出：\"abcabccdcdcdef\"\n\n示例 4：\n输入：s = \"abc3[cd]xyz\"\n输出：\"abccdcdcdxyz\"\n\n提示：\n\n- 1 <= s.length <= 30\n- s 由小写英文字母、数字和方括号 '[]' 组成\n- s 保证是一个 有效 的输入。\n- s 中所有整数的取值范围为 [1, 300]",
       "tags": [
         "P1",
         "Medium"
