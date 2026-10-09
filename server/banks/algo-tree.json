@@ -1,0 +1,341 @@
+{
+  "id": "algo-tree",
+  "name": "算法 · 二叉树",
+  "version": 1,
+  "updatedAt": "10-08",
+  "questions": [
+    {
+      "id": "lc0144",
+      "type": "recall",
+      "stem": "LC 144 · 二叉树的前序遍历：给你二叉树的根节点 root，返回节点值的前序遍历（顺序：根、左、右）。进阶：用迭代完成。示例：输入 [1,null,2,3]，输出 [1,2,3]。",
+      "tags": [
+        "P1",
+        "Easy"
+      ],
+      "images": [
+        "img/lc0144-1.png",
+        "img/lc0144-2.png"
+      ],
+      "approach": {
+        "strategy": "显式栈迭代：根入栈，弹出即访问，右先压左后压",
+        "steps": [
+          "根节点入栈，结果列表置空",
+          "弹栈访问节点值，再依次把右孩子、左孩子压栈（右先入保证左先出）",
+          "栈空结束，栈的顺序天然保证中左右"
+        ],
+        "timeCx": "O(n)",
+        "spaceCx": "O(n)"
+      },
+      "pseudocode": "stack = [root]\nresult = 空列表\nwhile stack 非空:\n    node = stack.pop()\n    result 追加 node.val\n    若 node.right 非空: 右孩子入栈\n    若 node.left 非空: 左孩子入栈\nreturn result",
+      "code": "def preorderTraversal(root):\n    res, stack = [], [root] if root else []\n    while stack:\n        node = stack.pop()        # 弹出当前子树根\n        res.append(node.val)      # 先访问根\n        if node.right:\n            stack.append(node.right)  # 右先入后出\n        if node.left:\n            stack.append(node.left)\n    return res",
+      "weight": 3
+    },
+    {
+      "id": "lc0102",
+      "type": "recall",
+      "stem": "LC 102 · 二叉树的层序遍历：给你二叉树的根节点 root，返回其节点值的层序遍历：逐层从左到右访问，每层单独一个子列表。示例：输入 [3,9,20,null,null,15,7]，输出 [[3],[9,20],[15,7]]。",
+      "tags": [
+        "P0",
+        "Medium"
+      ],
+      "images": [
+        "img/lc0102-1.jpg"
+      ],
+      "approach": {
+        "strategy": "队列 BFS，每轮固定当前队列长度切出一层",
+        "steps": [
+          "空树直接返回空列表，否则根节点入队",
+          "每轮先取 size=len(队列)，循环 size 次出队收集本层值，并把左右孩子入队",
+          "本层收集完追加进总结果，队列空结束"
+        ],
+        "timeCx": "O(n)",
+        "spaceCx": "O(n)"
+      },
+      "pseudocode": "queue = [root]\nresult = 空列表\nwhile queue 非空:\n    size = len(queue)\n    level = 空列表\n    循环 size 次:\n        node = 队首出队\n        level 追加 node.val\n        node 左孩子、右孩子依次入队\n    result 追加 level\nreturn result",
+      "code": "from collections import deque\ndef levelOrder(root):\n    if not root: return []\n    res, q = [], deque([root])\n    while q:\n        level = []\n        for _ in range(len(q)):    # 固定本层节点数\n            node = q.popleft()\n            level.append(node.val)\n            if node.left: q.append(node.left)\n            if node.right: q.append(node.right)\n        res.append(level)\n    return res",
+      "weight": 4
+    },
+    {
+      "id": "lc0104",
+      "type": "recall",
+      "stem": "LC 104 · 二叉树的最大深度：给你二叉树的根节点 root，返回其最大深度：从根节点到最远叶子节点最长路径上的节点数。示例：输入 [3,9,20,null,null,15,7]，输出 3。",
+      "tags": [
+        "P0",
+        "Easy"
+      ],
+      "images": [
+        "img/lc0104-1.jpg"
+      ],
+      "approach": {
+        "strategy": "递归分治：深度等于 1 加左右子树深度的较大者",
+        "steps": [
+          "空节点返回 0（递归出口）",
+          "分别递归求左子树、右子树深度",
+          "返回较大者加 1"
+        ],
+        "timeCx": "O(n)",
+        "spaceCx": "O(h)"
+      },
+      "pseudocode": "函数 maxDepth(node):\n    若 node 为空: 返回 0\n    left = maxDepth(node.left)\n    right = maxDepth(node.right)\n    return max(left, right) + 1",
+      "code": "def maxDepth(root):\n    if not root:\n        return 0            # 空树深度为 0\n    left = maxDepth(root.left)\n    right = maxDepth(root.right)\n    return max(left, right) + 1",
+      "weight": 4
+    },
+    {
+      "id": "lc0226",
+      "type": "recall",
+      "stem": "LC 226 · 翻转二叉树：给你二叉树的根节点 root，翻转整棵二叉树（左右镜像），并返回其根节点。示例：输入 [4,2,7,1,3,6,9]，输出 [4,7,2,9,6,3,1]。",
+      "tags": [
+        "P0",
+        "Easy"
+      ],
+      "images": [
+        "img/lc0226-1.jpg",
+        "img/lc0226-2.jpg"
+      ],
+      "approach": {
+        "strategy": "递归：先递归翻转左右子树，再交换两个孩子",
+        "steps": [
+          "空节点直接返回",
+          "先分别递归翻转左子树、右子树（结果须先暂存）",
+          "交换当前节点的左右孩子后返回当前节点"
+        ],
+        "timeCx": "O(n)",
+        "spaceCx": "O(h)"
+      },
+      "pseudocode": "函数 invertTree(node):\n    若 node 为空: 返回空\n    left = invertTree(node.left)\n    right = invertTree(node.right)\n    node.left = right\n    node.right = left\n    return node",
+      "code": "def invertTree(root):\n    if not root:\n        return root                # 空树不处理\n    left = invertTree(root.left)   # 先递归取结果暂存\n    right = invertTree(root.right)\n    root.left, root.right = right, left  # 交换\n    return root",
+      "weight": 4
+    },
+    {
+      "id": "lc0101",
+      "type": "recall",
+      "stem": "LC 101 · 对称二叉树：给你二叉树的根节点 root，判断其是否关于中轴线镜像对称。注意若同时满足下面两点则对称：两棵子树根值相同；每棵树的左子树与另一棵树的右子树镜像对称。示例：输入 [1,2,2,3,4,4,3]，输出 true；输入 [1,2,2,null,3,null,3]，输出 false。",
+      "tags": [
+        "P0",
+        "Easy"
+      ],
+      "images": [
+        "img/lc0101-1.png",
+        "img/lc0101-2.png"
+      ],
+      "approach": {
+        "strategy": "双指针递归：比较镜像位而非父子位",
+        "steps": [
+          "递归比较 left 与 right 两个节点",
+          "两者都空返回真；一空或值不等返回假",
+          "递归比（l 的左 vs r 的右）与（l 的右 vs r 的左），两者同时成立才对称"
+        ],
+        "timeCx": "O(n)",
+        "spaceCx": "O(h)"
+      },
+      "pseudocode": "函数 check(l, r):\n    若 l 与 r 都为空: 返回真\n    若 l 为空或 r 为空或 l.val 不等于 r.val: 返回假\n    return check(l.left, r.right) 且 check(l.right, r.left)\n\nreturn root 为空 或 check(root.left, root.right)",
+      "code": "def isSymmetric(root):\n    def check(l, r):\n        if not l and not r: return True   # 同为空\n        if not l or not r or l.val != r.val: return False\n        return check(l.left, r.right) and check(l.right, r.left)\n    return not root or check(root.left, root.right)",
+      "weight": 4
+    },
+    {
+      "id": "lc0543",
+      "type": "recall",
+      "stem": "LC 543 · 二叉树的直径：给你二叉树的根节点 root，返回其直径长度：任意两节点之间最长路径的边数，路径不一定经过根节点。两节点间路径长度为它们之间的边数。示例：输入 [1,2,3,4,5]，输出 3（最长路径为 4-2-1-3 或 5-2-1-3）。",
+      "tags": [
+        "P0",
+        "Easy"
+      ],
+      "images": [
+        "img/lc0543-1.jpg"
+      ],
+      "approach": {
+        "strategy": "后序求深度：每个节点用左深加右深更新全局直径",
+        "steps": [
+          "递归函数返回以该节点为端点向下的最大边数（空返回 0）",
+          "每个节点处用左结果加右结果（即过该节点的最长路径）更新全局答案",
+          "向上返回较大者加 1"
+        ],
+        "timeCx": "O(n)",
+        "spaceCx": "O(h)"
+      },
+      "pseudocode": "ans = 0\n函数 depth(node):\n    若 node 为空: 返回 0\n    left = depth(node.left)\n    right = depth(node.right)\n    ans = max(ans, left + right)\n    return max(left, right) + 1\n\ndepth(root)\nreturn ans",
+      "code": "def diameterOfBinaryTree(root):\n    ans = 0\n    def depth(node):\n        nonlocal ans\n        if not node: return 0\n        l, r = depth(node.left), depth(node.right)\n        ans = max(ans, l + r)      # 过该节点的最长边数\n        return max(l, r) + 1       # 单边深度上传\n    depth(root)\n    return ans",
+      "weight": 4
+    },
+    {
+      "id": "lc0236",
+      "type": "recall",
+      "stem": "LC 236 · 二叉树的最近公共祖先：给定二叉树根节点 root 和树中两个节点 p、q，返回它们的最近公共祖先：同时是 p 和 q 的祖先且深度最大（离根最远）的节点，节点可以是自身祖先。树中节点值互不相同，p、q 为不同节点且均存在于树中。示例：输入 root=[3,5,1,6,2,0,8,null,null,7,4]，p=5，q=1，输出 3。",
+      "tags": [
+        "P0",
+        "Medium"
+      ],
+      "images": [
+        "img/lc0236-1.png",
+        "img/lc0236-2.png"
+      ],
+      "approach": {
+        "strategy": "后序递归：左右子树均命中则当前节点即答案",
+        "steps": [
+          "递归出口：节点为空或等于 p、q 时返回该节点",
+          "分别递归左右子树拿两个返回值",
+          "左右都非空说明 p、q 分居两侧，当前节点即 LCA；只有一侧非空则把该侧结果向上传"
+        ],
+        "timeCx": "O(n)",
+        "spaceCx": "O(h)"
+      },
+      "pseudocode": "函数 lca(node):\n    若 node 为空或 node 等于 p 或 q: 返回 node\n    left = lca(node.left)\n    right = lca(node.right)\n    若 left 与 right 都非空: 返回 node\n    返回 left 与 right 中非空的一个",
+      "code": "def lowestCommonAncestor(root, p, q):\n    if not root or root is p or root is q:\n        return root               # 命中目标或到空\n    left = lowestCommonAncestor(root.left, p, q)\n    right = lowestCommonAncestor(root.right, p, q)\n    if left and right:\n        return root               # 分居两侧即 LCA\n    return left if left else right  # 单侧命中向上传",
+      "weight": 4
+    },
+    {
+      "id": "lc0105",
+      "type": "recall",
+      "stem": "LC 105 · 从前序与中序遍历序列构造二叉树：给定一棵树的前序遍历 preorder 与中序遍历 inorder（节点值互不相同），构造并返回这棵二叉树。示例：输入 preorder=[3,9,20,15,7]，inorder=[9,3,15,20,7]，输出树 [3,9,20,null,null,15,7]。",
+      "tags": [
+        "P0",
+        "Medium"
+      ],
+      "images": [
+        "img/lc0105-1.jpg"
+      ],
+      "approach": {
+        "strategy": "前序首值定根，哈希定位中序分割点，递归切两段",
+        "steps": [
+          "建哈希表：中序值到下标，省去每层线性查找",
+          "递归按中序区间 [lo,hi) 构造：取前序当前位置的值为根，前序指针前移一位",
+          "在中序里查根下标 m，区间 [lo,m) 构左子树、[m+1,hi) 构右子树（前序指针顺序天然对应）"
+        ],
+        "timeCx": "O(n)",
+        "spaceCx": "O(n)"
+      },
+      "pseudocode": "idx = {中序值: 下标}\npos = 0  # 前序消费位置\n函数 build(lo, hi):\n    若 lo >= hi: 返回空\n    root = 新节点(preorder[pos]); pos 前进 1\n    m = idx[root.val]\n    root.left = build(lo, m)\n    root.right = build(m+1, hi)\n    return root\n\nreturn build(0, len(inorder))",
+      "code": "def buildTree(preorder, inorder):\n    idx = {v: i for i, v in enumerate(inorder)}  # 值到中序下标\n    pos = 0\n    def build(lo, hi):\n        nonlocal pos\n        if lo >= hi: return None\n        root = TreeNode(preorder[pos])  # 前序当前值即根\n        pos += 1\n        m = idx[root.val]\n        root.left = build(lo, m)        # 中序左段构左子树\n        root.right = build(m + 1, hi)\n        return root\n    return build(0, len(inorder))",
+      "weight": 4
+    },
+    {
+      "id": "lc0124",
+      "type": "recall",
+      "stem": "LC 124 · 二叉树中的最大路径和：给你非空二叉树的根节点 root，路径为从任意节点出发、沿父子连接走到任意节点的序列（每个节点至多访问一次，至少包含一个节点），路径和为各节点值之和，节点值可能为负，求最大路径和。示例：输入 [-10,9,20,null,null,15,7]，输出 42（最优路径 15-20-7）。",
+      "tags": [
+        "P0",
+        "Hard"
+      ],
+      "images": [
+        "img/lc0124-1.jpg",
+        "img/lc0124-2.jpg"
+      ],
+      "approach": {
+        "strategy": "后序求单边最大贡献，弯路径在节点处合并更新",
+        "steps": [
+          "递归函数返回以该节点向下走出的单边最大链和，负贡献按 0 截断（即不延伸）",
+          "每个节点处用左贡献加右贡献加自身值更新全局答案（路径在本节点拐弯）",
+          "上传给父节点时只能选左右较大一条单边加自身"
+        ],
+        "timeCx": "O(n)",
+        "spaceCx": "O(h)"
+      },
+      "pseudocode": "ans = 负无穷\n函数 gain(node):\n    若 node 为空: 返回 0\n    l = max(gain(node.left), 0)\n    r = max(gain(node.right), 0)\n    ans = max(ans, l + r + node.val)\n    return max(l, r) + node.val\n\ngain(root)\nreturn ans",
+      "code": "def maxPathSum(root):\n    ans = float('-inf')\n    def gain(node):\n        nonlocal ans\n        if not node: return 0\n        l = max(gain(node.left), 0)       # 负贡献砍断\n        r = max(gain(node.right), 0)\n        ans = max(ans, l + r + node.val)  # 弯路径在此拐弯\n        return max(l, r) + node.val       # 单边上传\n    gain(root)\n    return ans",
+      "weight": 4
+    },
+    {
+      "id": "lc0098",
+      "type": "recall",
+      "stem": "LC 98 · 验证二叉搜索树：给你二叉树的根节点 root，判断其是否是一个有效的二叉搜索树：节点的左子树只包含小于当前节点的数，右子树只包含大于当前节点的数，且左右子树也必须是 BST。示例：输入 [2,1,3]，输出 true；输入 [5,1,4,null,null,3,6]，输出 false（4 的左子树含 3 非法）。",
+      "tags": [
+        "P0",
+        "Medium"
+      ],
+      "images": [
+        "img/lc0098-1.jpg",
+        "img/lc0098-2.jpg"
+      ],
+      "approach": {
+        "strategy": "递归携带上下界：每个节点须落在开区间内",
+        "steps": [
+          "根节点初始界为负无穷到正无穷",
+          "当前节点值不在开区间内立即返回假",
+          "递归左子树时上界收紧为当前值，递归右子树时下界收紧为当前值"
+        ],
+        "timeCx": "O(n)",
+        "spaceCx": "O(h)"
+      },
+      "pseudocode": "函数 valid(node, lo, hi):\n    若 node 为空: 返回真\n    若 node.val <= lo 或 node.val >= hi: 返回假\n    return valid(node.left, lo, node.val) 且 valid(node.right, node.val, hi)\n\nreturn valid(root, 负无穷, 正无穷)",
+      "code": "def isValidBST(root):\n    def valid(node, lo, hi):\n        if not node: return True\n        if not (lo < node.val < hi): return False  # 越界非法\n        left_ok = valid(node.left, lo, node.val)  # 左树上界收紧\n        return left_ok and valid(node.right, node.val, hi)\n    return valid(root, float('-inf'), float('inf'))",
+      "weight": 4
+    },
+    {
+      "id": "lc0230",
+      "type": "recall",
+      "stem": "LC 230 · 二叉搜索树中第 K 小的元素：给定二叉搜索树（BST）的根节点 root 和整数 k，返回树中第 k 小的元素（k 从 1 计）。示例：输入 root=[3,1,4,null,2]，k=1，输出 1。",
+      "tags": [
+        "P2",
+        "Medium"
+      ],
+      "images": [
+        "img/lc0230-1.jpg",
+        "img/lc0230-2.jpg"
+      ],
+      "approach": {
+        "strategy": "中序迭代出栈即升序，计数到 k 立即返回",
+        "steps": [
+          "BST 中序遍历结果为升序序列",
+          "显式栈迭代：沿左链一路压栈到底，再弹栈",
+          "每弹出一个节点计数加 1，计数到 k 返回该节点值，之后转向右子树继续"
+        ],
+        "timeCx": "O(h+k)",
+        "spaceCx": "O(h)"
+      },
+      "pseudocode": "stack = 空栈; node = root; cnt = 0\nwhile stack 非空或 node 非空:\n    沿 node 左链全部压栈直到空\n    node = stack.pop()\n    cnt 前进 1\n    若 cnt == k: 返回 node.val\n    node = node.right",
+      "code": "def kthSmallest(root, k):\n    stack, node, cnt = [], root, 0\n    while stack or node:\n        while node:               # 左链全部入栈\n            stack.append(node)\n            node = node.left\n        node = stack.pop()\n        cnt += 1\n        if cnt == k: return node.val  # 第 k 小\n        node = node.right         # 转向右子树\n    return -1",
+      "weight": 2
+    },
+    {
+      "id": "lc0199",
+      "type": "recall",
+      "stem": "LC 199 · 二叉树的右视图：给你二叉树的根节点 root，想象自己站在树的右侧，按从顶部到底部的顺序返回能看到的节点值（每层最右侧的节点）。示例：输入 [1,2,3,null,5,null,4]，输出 [1,3,4]。",
+      "tags": [
+        "P2",
+        "Medium"
+      ],
+      "images": [
+        "img/lc0199-1.png",
+        "img/lc0199-2.png"
+      ],
+      "approach": {
+        "strategy": "层序 BFS，每层最后出队的节点即右视图",
+        "steps": [
+          "队列 BFS 逐层处理，每轮固定 size=len(队列)",
+          "内层循环弹出一个处理一个，仅当是本层最后一个时记录节点值",
+          "左右孩子照常入队，队列空结束"
+        ],
+        "timeCx": "O(n)",
+        "spaceCx": "O(n)"
+      },
+      "pseudocode": "queue = [root]; res = 空列表\nwhile queue 非空:\n    size = len(queue)\n    循环 size 次（计数 i）:\n        node = 队首出队\n        若 i 是本层最后一个: res 追加 node.val\n        node 左右孩子入队\nreturn res",
+      "code": "from collections import deque\ndef rightSideView(root):\n    if not root: return []\n    res, q = [], deque([root])\n    while q:\n        size = len(q)\n        for i in range(size):\n            node = q.popleft()\n            if i == size - 1:     # 本层最后弹出的\n                res.append(node.val)\n            if node.left: q.append(node.left)\n            if node.right: q.append(node.right)\n    return res",
+      "weight": 2
+    },
+    {
+      "id": "lc0437",
+      "type": "recall",
+      "stem": "LC 437 · 路径总和 III：给定二叉树根节点 root 和整数 targetSum，求路径数目：路径从上往下（从祖先到后代），不必从根开始也不必到叶子结束，路径上节点值之和等于 targetSum。节点值可正可负。示例：输入 root=[10,5,-3,3,2,null,11,3,-2,null,1]，targetSum=8，输出 3。",
+      "tags": [
+        "P2",
+        "Medium"
+      ],
+      "images": [
+        "img/lc0437-1.jpg"
+      ],
+      "approach": {
+        "strategy": "根到节点前缀和加哈希计数，回溯时撤销",
+        "steps": [
+          "DFS 携带根到当前的前缀和 cur，哈希表记每个前缀和出现次数，初值 {0:1} 兜底从根出发的路径",
+          "到每个节点先更新 cur，答案累加 cnt[cur - targetSum]（前缀差即目标和路径）",
+          "递归左右子树后回溯：把 cnt[cur] 减 1，避免跨分支误配"
+        ],
+        "timeCx": "O(n)",
+        "spaceCx": "O(n)"
+      },
+      "pseudocode": "cnt = {0: 1}; ans = 0\n函数 dfs(node, cur):\n    若 node 为空: 返回\n    cur += node.val\n    ans += cnt.get(cur - targetSum, 0)\n    cnt[cur] = cnt.get(cur, 0) 加 1\n    dfs(node.left, cur)\n    dfs(node.right, cur)\n    cnt[cur] 减 1  # 回溯撤销\n\ndfs(root, 0)\nreturn ans",
+      "code": "def pathSum(root, targetSum):\n    cnt = {0: 1}                       # 空前缀兜底\n    ans = 0\n    def dfs(node, cur):\n        nonlocal ans\n        if not node: return\n        cur += node.val\n        ans += cnt.get(cur - targetSum, 0)  # 前缀差即目标路径\n        cnt[cur] = cnt.get(cur, 0) + 1\n        dfs(node.left, cur)\n        dfs(node.right, cur)\n        cnt[cur] -= 1               # 回溯撤销本路径\n    dfs(root, 0)\n    return ans",
+      "weight": 2
+    }
+  ]
+}

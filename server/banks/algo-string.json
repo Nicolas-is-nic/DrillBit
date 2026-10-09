@@ -1,0 +1,118 @@
+{
+  "id": "algo-string",
+  "name": "算法 · 字符串",
+  "version": 1,
+  "updatedAt": "10-08",
+  "questions": [
+    {
+      "id": "lc0415",
+      "type": "recall",
+      "stem": "LC 415 · 字符串相加：给定两个非负整数的字符串形式 num1 和 num2，返回它们的和的字符串形式；不能使用内置大整数类型或直接把字符串转成整数相加。示例：输入 num1=\"11\"、num2=\"123\"，输出 \"134\"。",
+      "tags": [
+        "P0",
+        "Easy"
+      ],
+      "approach": {
+        "strategy": "双指针从低位到高位模拟竖式加法",
+        "steps": [
+          "i、j 分别指向两串末位，carry 记进位",
+          "每轮两位数字加 carry，余数写入结果，商进位；任一串越界该位取 0",
+          "两指针走完且 carry 为 0 后把结果反转返回"
+        ],
+        "timeCx": "O(max(m,n))",
+        "spaceCx": "O(1)"
+      },
+      "pseudocode": "i, j 指两串末位，carry = 0，out = 空列表\n当 i>=0 或 j>=0 或 carry>0:\n    da = a[i] 的数字（越界取 0），db 同理\n    carry, d = (da+db+carry) 对 10 的商和余数\n    out 追加 d\n    i、j 各前移一位\n返回 out 反转后连接的字符串",
+      "code": "def addStrings(a, b):\n    i, j, carry, out = len(a) - 1, len(b) - 1, 0, []\n    while i >= 0 or j >= 0 or carry:\n        da = ord(a[i]) - 48 if i >= 0 else 0  # 越界位取 0\n        db = ord(b[j]) - 48 if j >= 0 else 0\n        carry, d = divmod(da + db + carry, 10)\n        out.append(chr(d + 48))  # 逐位拼接\n        i, j = i - 1, j - 1\n    return ''.join(out[::-1])  # 反转得高位在前",
+      "weight": 4
+    },
+    {
+      "id": "lc0014",
+      "type": "recall",
+      "stem": "LC 14 · 最长公共前缀：编写函数查找字符串数组中的最长公共前缀；如果不存在公共前缀，返回空字符串。示例：输入 [\"flower\",\"flow\",\"flight\"]，输出 \"fl\"。",
+      "tags": [
+        "P0",
+        "Easy"
+      ],
+      "approach": {
+        "strategy": "纵向扫描：以第一串为基准逐列比较",
+        "steps": [
+          "逐位枚举第一串的字符 ch 与列号 i",
+          "其余每串在该列越界或字符不等于 ch 即截断，返回前 i 个字符",
+          "扫完第一串全部字符仍未截断，第一串本身就是公共前缀"
+        ],
+        "timeCx": "O(S)，S 为所有字符总数",
+        "spaceCx": "O(1)"
+      },
+      "pseudocode": "for i 与字符 ch in 第一串:\n    for 其余每串 s:\n        若 i 越界或 s[i] != ch:\n            返回 第一串[:i]  # 首个不匹配处截断\n返回 第一串",
+      "code": "def longestCommonPrefix(strs):\n    for i, ch in enumerate(strs[0]):\n        for s in strs[1:]:\n            if i >= len(s) or s[i] != ch:\n                return strs[0][:i]  # 首个不匹配处截断\n    return strs[0]",
+      "weight": 4
+    },
+    {
+      "id": "lc0151",
+      "type": "recall",
+      "stem": "LC 151 · 反转字符串中的单词：给定字符串 s，反转 s 中单词的顺序；单词由非空格字符组成，s 中至少存在一个单词，返回结果中单词间用单个空格连接、首尾不含空格。示例：输入 s=\"  hello   world  \"，输出 \"world hello\"。",
+      "tags": [
+        "P1",
+        "Medium"
+      ],
+      "approach": {
+        "strategy": "split 压缩空格，逆序后单空格拼接",
+        "steps": [
+          "用无参 split() 切分，连续空格与首尾空格自动丢弃",
+          "单词列表逆序",
+          "用单个空格 join 返回"
+        ],
+        "timeCx": "O(n)",
+        "spaceCx": "O(n)"
+      },
+      "pseudocode": "words = s.split()  # 无参切分，丢掉全部多余空格\n返回 ' '.join(words 逆序)",
+      "code": "def reverseWords(s):\n    words = s.split()  # 无参切分，自动去掉所有空格\n    return ' '.join(words[::-1])  # 逆序后单空格拼接",
+      "weight": 3
+    },
+    {
+      "id": "lc0043",
+      "type": "recall",
+      "stem": "LC 43 · 字符串相乘：给定两个非负整数的字符串形式 num1 和 num2，返回它们乘积的字符串形式；不能使用内置大整数类型或直接把字符串转成整数相乘。示例：输入 num1=\"123\"、num2=\"456\"，输出 \"56088\"。",
+      "tags": [
+        "P1",
+        "Medium"
+      ],
+      "approach": {
+        "strategy": "竖式乘法：乘积累加到 i+j+1 位再统一进位",
+        "steps": [
+          "结果数组 res 长 m+n，num1[i] 与 num2[j] 的乘积累加到 res[i+j+1]",
+          "两数循环完成后从末位向首位统一进位（商前移、余数留位）",
+          "任一因子为 '0' 直接返回 '0'，拼接后去掉前导零"
+        ],
+        "timeCx": "O(mn)",
+        "spaceCx": "O(m+n)"
+      },
+      "pseudocode": "若 a 或 b 为 '0': 返回 '0'\nres = 长度 m+n 的零数组\nfor i 从 m-1 到 0:\n    for j 从 n-1 到 0:\n        res[i+j+1] += a[i]数字 × b[j]数字\nfor k 从 m+n-1 到 1:\n    res[k-1] += res[k] 除 10 的商; res[k] %= 10  # 统一进位\n拼接 res 各位，去前导零返回",
+      "code": "def multiply(a, b):\n    if a == '0' or b == '0':\n        return '0'\n    m, n = len(a), len(b)\n    res = [0] * (m + n)\n    for i in range(m - 1, -1, -1):\n        for j in range(n - 1, -1, -1):\n            res[i + j + 1] += (ord(a[i]) - 48) * (ord(b[j]) - 48)  # 逐位相乘累加\n    for k in range(m + n - 1, 0, -1):\n        res[k - 1] += res[k] // 10; res[k] %= 10  # 统一进位\n    return ''.join(map(str, res)).lstrip('0')  # 去前导零",
+      "weight": 3
+    },
+    {
+      "id": "lc0165",
+      "type": "recall",
+      "stem": "LC 165 · 比较版本号：给定两个版本号字符串 version1 和 version2（以点分隔的修订号组成，修订号可能含前导零），比较大小：version1 大于、小于、等于 version2 时分别返回 1、-1、0。示例：输入 version1=\"1.01\"、version2=\"1.001\"，输出 0。",
+      "tags": [
+        "P2",
+        "Medium"
+      ],
+      "approach": {
+        "strategy": "按点切分，逐段转整数比较，短段补零",
+        "steps": [
+          "两个版本号按 '.' 切分成修订号列表",
+          "逐段转 int 比较（前导零自动消除），不等立即返回 1 或 -1",
+          "段数不足的一侧该段按 0 参与比较，全部相等返回 0"
+        ],
+        "timeCx": "O(n+m)",
+        "spaceCx": "O(n+m)"
+      },
+      "pseudocode": "a = v1 按 '.' 切分，b = v2 同理\nfor i in 0..max(段数)-1:\n    x = a[i] 转整数（无该段取 0），y 同理\n    若 x != y: 返回 x>y ? 1 : -1\n返回 0",
+      "code": "def compareVersion(v1, v2):\n    a, b = v1.split('.'), v2.split('.')\n    for i in range(max(len(a), len(b))):\n        x = int(a[i]) if i < len(a) else 0  # 空段按 0\n        y = int(b[i]) if i < len(b) else 0\n        if x != y:\n            return 1 if x > y else -1\n    return 0",
+      "weight": 2
+    }
+  ]
+}

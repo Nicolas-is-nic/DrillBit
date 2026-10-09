@@ -1,0 +1,192 @@
+{
+  "id": "algo-array",
+  "name": "算法 · 数组技巧",
+  "version": 1,
+  "updatedAt": "10-08",
+  "questions": [
+    {
+      "id": "lc0075",
+      "type": "recall",
+      "stem": "LC 75 · 颜色分类：给定一个包含红色、白色、蓝色（分别用 0、1、2 表示）的数组 nums，原地排序使相同颜色相邻并按红白蓝顺序排列，须使用仅常数额外空间的一趟算法。示例：输入 [2,0,2,1,1,0]，输出 [0,0,1,1,2,2]。",
+      "tags": [
+        "P1",
+        "Medium"
+      ],
+      "approach": {
+        "strategy": "三指针荷兰国旗：0 区左推、2 区右推",
+        "steps": [
+          "p0 指 0 区右边界，p2 指 2 区左边界，i 为扫描指针",
+          "遇 0 与 p0 交换后 i 前进；遇 2 与 p2 交换后 i 不动（换来的数未检查）",
+          "遇 1 直接 i 前进；i 越过 p2 时结束"
+        ],
+        "timeCx": "O(n)",
+        "spaceCx": "O(1)"
+      },
+      "pseudocode": "p0 = 0, p2 = 末位, i = 0\n当 i <= p2:\n    若 nums[i] == 0: 与 p0 位交换; p0+1; i+1\n    若 nums[i] == 2: 与 p2 位交换; p2-1; i 不动  # 换来的数未检查\n    否则（为 1）: i+1",
+      "code": "def sortColors(nums):\n    p0, i, p2 = 0, 0, len(nums) - 1\n    while i <= p2:\n        if nums[i] == 0:\n            nums[i], nums[p0] = nums[p0], nums[i]  # 归入 0 区\n            p0 += 1; i += 1\n        elif nums[i] == 2:\n            nums[i], nums[p2] = nums[p2], nums[i]  # 归入 2 区\n            p2 -= 1  # 换来的数未检查，i 不动\n        else:\n            i += 1  # 数字 1 留在中间",
+      "weight": 3
+    },
+    {
+      "id": "lc0031",
+      "type": "recall",
+      "stem": "LC 31 · 下一个排列：将整数数组 nums 重排成字典序中下一个更大的排列；若不存在更大排列（当前已是最大），则重排为最小排列（升序）。必须原地修改、只允许使用常数额外空间。示例：输入 [1,2,3]，输出 [1,3,2]；输入 [3,2,1]，输出 [1,2,3]。",
+      "tags": [
+        "P0",
+        "Medium"
+      ],
+      "approach": {
+        "strategy": "从右找升序对，换入刚大的数，反转后缀",
+        "steps": [
+          "从右向左找第一个满足 nums[i]<nums[i+1] 的 i（其后缀为降序）",
+          "再从右向左找第一个大于 nums[i] 的 j，交换 i、j 两数",
+          "把 i 之后的后缀反转（原为降序，反转成最小）；找不到 i 则整串反转"
+        ],
+        "timeCx": "O(n)",
+        "spaceCx": "O(1)"
+      },
+      "pseudocode": "i 从 n-2 向左找第一个 nums[i] < nums[i+1]\n若 i 存在:\n    j 从末位向左找第一个 nums[j] > nums[i]\n    交换 nums[i] 与 nums[j]\n反转 nums[i+1..n-1]  # 后缀降序翻成最小",
+      "code": "def nextPermutation(nums):\n    n = len(nums)\n    i = n - 2\n    while i >= 0 and nums[i] >= nums[i + 1]:\n        i -= 1  # 从右找第一个升序对的左端\n    if i >= 0:\n        j = n - 1\n        while nums[j] <= nums[i]:\n            j -= 1  # 找到刚大于 nums[i] 的数\n        nums[i], nums[j] = nums[j], nums[i]\n    l, r = i + 1, n - 1\n    while l < r:\n        nums[l], nums[r] = nums[r], nums[l]  # 后缀原地反转成最小\n        l, r = l + 1, r - 1",
+      "weight": 4
+    },
+    {
+      "id": "lc0041",
+      "type": "recall",
+      "stem": "LC 41 · 缺失的第一个正数：给定一个未排序的整数数组 nums，请找出其中没有出现的最小的正整数；要求时间复杂度 O(n) 且只使用常数级别额外空间。示例：输入 [1,2,0]，输出 3；输入 [3,4,-1,1]，输出 2。",
+      "tags": [
+        "P2",
+        "Hard"
+      ],
+      "approach": {
+        "strategy": "原地哈希：把值 v 交换归位到下标 v-1",
+        "steps": [
+          "每个位置 i 循环交换：当 nums[i] 在 [1,n] 且其应在位 nums[nums[i]-1] 不等于它时，把值换到应在位",
+          "归位完成后扫描第一个 nums[i] != i+1 的位置，答案即 i+1",
+          "全部归位则答案为 n+1（非正数与越界值自然被跳过）"
+        ],
+        "timeCx": "O(n)",
+        "spaceCx": "O(1)"
+      },
+      "pseudocode": "for i in 0..n-1:\n    while nums[i] 在 [1,n] 且 nums[nums[i]-1] != nums[i]:\n        交换 nums[i] 与 nums[nums[i]-1]  # 值 v 归位到下标 v-1\nfor i in 0..n-1:\n    若 nums[i] != i+1: 返回 i+1  # 首个错位处\n返回 n+1",
+      "code": "def firstMissingPositive(nums):\n    n = len(nums)\n    for i in range(n):\n        while 1 <= nums[i] <= n and nums[nums[i] - 1] != nums[i]:\n            j = nums[i] - 1\n            nums[i], nums[j] = nums[j], nums[i]  # 值 v 归位到下标 v-1\n    for i in range(n):\n        if nums[i] != i + 1:\n            return i + 1  # 首个错位处即答案\n    return n + 1",
+      "weight": 2
+    },
+    {
+      "id": "lc0048",
+      "type": "recall",
+      "stem": "LC 48 · 旋转图像：给定一个 n×n 的二维矩阵 matrix，将其顺时针旋转 90 度，必须原地修改矩阵。示例：输入 [[1,2,3],[4,5,6],[7,8,9]]，输出 [[7,4,1],[8,5,2],[9,6,3]]。",
+      "tags": [
+        "P2",
+        "Medium"
+      ],
+      "images": [
+        "img/lc0048-1.jpg",
+        "img/lc0048-2.jpg"
+      ],
+      "approach": {
+        "strategy": "先沿主对角线转置，再每行左右翻转",
+        "steps": [
+          "遍历 i<j 的下标对，交换 matrix[i][j] 与 matrix[j][i] 完成转置",
+          "逐行 reverse 完成左右翻转",
+          "两步合成顺时针 90 度：列变行、顺序倒转"
+        ],
+        "timeCx": "O(n^2)",
+        "spaceCx": "O(1)"
+      },
+      "pseudocode": "转置: for 每对 i<j: 交换 matrix[i][j] 与 matrix[j][i]\n翻转: 对每一行执行 reverse\n返回 matrix（原地完成）",
+      "code": "def rotate(matrix):\n    n = len(matrix)\n    for i in range(n):\n        for j in range(i + 1, n):\n            matrix[i][j], matrix[j][i] = matrix[j][i], matrix[i][j]  # 转置\n    for row in matrix:\n        row.reverse()  # 每行左右翻转",
+      "weight": 2
+    },
+    {
+      "id": "lc0054",
+      "type": "recall",
+      "stem": "LC 54 · 螺旋矩阵：给定一个 m×n 的矩阵 matrix，请按顺时针螺旋顺序返回矩阵中的所有元素。示例：输入 [[1,2,3],[4,5,6],[7,8,9]]，输出 [1,2,3,6,9,8,7,4,5]。",
+      "tags": [
+        "P2",
+        "Medium"
+      ],
+      "images": [
+        "img/lc0054-1.jpg",
+        "img/lc0054-2.jpg"
+      ],
+      "approach": {
+        "strategy": "四边界收缩，每圈右下左上剥一层",
+        "steps": [
+          "维护 top、bottom、left、right 四个边界",
+          "每圈依次采上边一行（左到右）、右边一列（上到下，不含顶行末元素）",
+          "剩多行多列时再采底行（右到左）与左边一列（下到上，均不含已采端点），随后四边界各向内收缩一格"
+        ],
+        "timeCx": "O(mn)",
+        "spaceCx": "O(1)"
+      },
+      "pseudocode": "t, b, l, r = 0, 行末, 0, 列末\n当 t <= b 且 l <= r:\n    采 m[t][l..r]  # 向右\n    采 m[t+1..b][r]  # 向下\n    若 t < b 且 l < r:  # 剩两行两列以上才采左与上\n        采 m[b][r-1..l]  # 向左\n        采 m[b-1..t+1][l]  # 向上\n    t+1; b-1; l+1; r-1  # 四边界收缩\n返回 res",
+      "code": "def spiralOrder(m):\n    t, b, l, r = 0, len(m) - 1, 0, len(m[0]) - 1\n    res = []\n    while t <= b and l <= r:\n        res += m[t][l:r + 1]  # 向右采顶行\n        res += [m[i][r] for i in range(t + 1, b + 1)]  # 向下采右列\n        if t < b and l < r:  # 单行或单列时剩余两边不再采\n            res += m[b][l:r][::-1]  # 向左采底行（右端已采）\n            res += [m[i][l] for i in range(b - 1, t, -1)]  # 向上采左列（两端已采）\n        t += 1; b -= 1; l += 1; r -= 1  # 四边界收缩\n    return res",
+      "weight": 2
+    },
+    {
+      "id": "lc0169",
+      "type": "recall",
+      "stem": "LC 169 · 多数元素：给定一个大小为 n 的数组 nums，返回其中的多数元素（出现次数大于 n/2 下取整的元素），题目保证多数元素一定存在。示例：输入 [3,2,3]，输出 3。",
+      "tags": [
+        "P0",
+        "Easy"
+      ],
+      "approach": {
+        "strategy": "摩尔投票：不同元素两两抵消，幸存即答案",
+        "steps": [
+          "维护候选 cand 与计数 cnt，遍历数组",
+          "cnt 为 0 时换当前元素为候选；否则同候选加一、异候选减一",
+          "因多数元素超过一半，抵消后幸存的候选必是多数元素"
+        ],
+        "timeCx": "O(n)",
+        "spaceCx": "O(1)"
+      },
+      "pseudocode": "cand = 空, cnt = 0\nfor x in nums:\n    若 cnt == 0: cand = x  # 换候选\n    cnt = cnt+1 若 x == cand 否则 cnt-1\n返回 cand",
+      "code": "def majorityElement(nums):\n    cand, cnt = None, 0\n    for x in nums:\n        if cnt == 0:\n            cand = x  # 计数耗尽，换候选\n        cnt += 1 if x == cand else -1  # 同加异减，两两抵消\n    return cand",
+      "weight": 4
+    },
+    {
+      "id": "lc0287",
+      "type": "recall",
+      "stem": "LC 287 · 寻找重复数：给定一个包含 n+1 个整数的数组 nums，其数字都在 [1,n] 范围内（含边界），假设只有一个重复的整数（它可能重复出现多次），找出这个重复数；要求不修改数组 nums 且只使用 O(1) 的额外空间。示例：输入 [1,3,4,2,2]，输出 2。",
+      "tags": [
+        "P1",
+        "Medium"
+      ],
+      "approach": {
+        "strategy": "Floyd 判环：值当下标成链，环入口即重复数",
+        "steps": [
+          "把 nums[i] 看作 next 指针，从下标 0 出发构成隐式链表，重复数即环入口",
+          "快慢指针同起点，慢走一步快走两步，首次相遇说明有环",
+          "慢指针回到起点后两者同速前进，再次相遇的下标即重复数"
+        ],
+        "timeCx": "O(n)",
+        "spaceCx": "O(1)"
+      },
+      "pseudocode": "slow = fast = 0\n循环:\n    slow = nums[slow]  # 慢走一步\n    fast = nums[nums[fast]]  # 快走两步\n    若 slow == fast: 跳出  # 相遇，有环\nslow = 0  # 回起点\n当 slow != fast:\n    slow = nums[slow]; fast = nums[fast]  # 同速前进\n返回 slow  # 环入口即重复数",
+      "code": "def findDuplicate(nums):\n    slow = fast = 0\n    while True:\n        slow = nums[slow]  # 慢指针走一步\n        fast = nums[nums[fast]]  # 快指针走两步\n        if slow == fast:\n            break  # 相遇，确认有环\n    slow = 0  # 回到起点\n    while slow != fast:\n        slow = nums[slow]\n        fast = nums[fast]  # 同速前进\n    return slow  # 环入口即重复数",
+      "weight": 3
+    },
+    {
+      "id": "lc0912",
+      "type": "recall",
+      "stem": "LC 912 · 排序数组：给定一个整数数组 nums，请将该数组升序排序并返回排序后的数组（期望时间复杂度 O(n log n)）。示例：输入 [5,2,3,1]，输出 [1,2,3,5]。",
+      "tags": [
+        "P1",
+        "Medium"
+      ],
+      "approach": {
+        "strategy": "归并排序：递归对半拆分，双指针归并",
+        "steps": [
+          "长度不超过 1 直接返回；从中点切成左右两半分别递归排序",
+          "双指针 i、j 比较两个有序半段，逐个取较小者进结果（相等先取左，保证稳定）",
+          "把剩余尾部整体拼接返回"
+        ],
+        "timeCx": "O(n log n)",
+        "spaceCx": "O(n)"
+      },
+      "pseudocode": "若长度 <= 1: 返回\nmid = 长度一半\nleft = 递归排序前半\nright = 递归排序后半\nres = 空列表，i = j = 0\n当 i、j 都未走完:\n    取 left[i] 与 right[j] 中较小者追加进 res，对应指针前移\n返回 res + left 剩余 + right 剩余",
+      "code": "def sortArray(nums):\n    if len(nums) <= 1:\n        return nums\n    mid = len(nums) // 2\n    left = sortArray(nums[:mid])  # 递归排序左半\n    right = sortArray(nums[mid:])  # 递归排序右半\n    res, i, j = [], 0, 0\n    while i < len(left) and j < len(right):\n        if left[i] <= right[j]:\n            res.append(left[i])  # 取较小者\n            i += 1\n        else:\n            res.append(right[j])\n            j += 1\n    return res + left[i:] + right[j:]  # 拼接剩余尾部",
+      "weight": 3
+    }
+  ]
+}

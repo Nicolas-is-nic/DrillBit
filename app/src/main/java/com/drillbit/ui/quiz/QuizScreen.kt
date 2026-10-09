@@ -378,10 +378,12 @@ private fun RecallContent(
     if (state.question.tags.isNotEmpty()) {
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             state.question.tags.forEach { tag ->
-                val isDifficulty = tag.equals("Hard", ignoreCase = true) ||
+                // P0（必须刷）与难度标签用警示色，P1/P2 普通 chip
+                val isWarn = tag == "P0" ||
+                    tag.equals("Hard", ignoreCase = true) ||
                     tag.equals("Medium", ignoreCase = true) ||
                     tag.equals("Easy", ignoreCase = true)
-                TagChip(text = tag, type = if (isDifficulty) TagChipType.WARN else TagChipType.NORMAL)
+                TagChip(text = tag, type = if (isWarn) TagChipType.WARN else TagChipType.NORMAL)
             }
         }
         Spacer(Modifier.height(8.dp))

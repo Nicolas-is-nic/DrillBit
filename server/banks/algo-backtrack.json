@@ -1,0 +1,192 @@
+{
+  "id": "algo-backtrack",
+  "name": "算法 · 回溯",
+  "version": 1,
+  "updatedAt": "10-08",
+  "questions": [
+    {
+      "id": "lc0046",
+      "type": "recall",
+      "stem": "LC 46 · 全排列：给定一个不含重复数字的整数数组 nums，返回其所有全排列，可按任意顺序返回。示例：输入 [1,2,3]，输出 [[1,2,3],[1,3,2],[2,1,3],[2,3,1],[3,1,2],[3,2,1]]。",
+      "tags": [
+        "P0",
+        "Medium"
+      ],
+      "approach": {
+        "strategy": "回溯：used 标记已选，逐位填数收集排列",
+        "steps": [
+          "path 记录已选数字，used 标记已用下标",
+          "每层遍历全部下标，跳过已用，选入后递归下一层",
+          "递归返回后弹出末尾并取消标记（回溯），path 长度等于 n 时收集一份拷贝"
+        ],
+        "timeCx": "O(n·n!)",
+        "spaceCx": "O(n)"
+      },
+      "pseudocode": "res = 空列表\npath = 空列表，used = 全假数组\n定义 backtrack():\n    若 len(path) == n: res 追加 path 拷贝; 返回\n    for i in 0..n-1:\n        若 used[i]: 跳过\n        used[i]=真; path 追加 nums[i]\n        backtrack()\n        path 弹尾; used[i]=假\n调用 backtrack()\n返回 res",
+      "code": "def permute(nums):\n    n = len(nums); res, path, used = [], [], [False] * n\n    def backtrack():\n        if len(path) == n:\n            res.append(path.copy())  # 收集一份拷贝\n            return\n        for i in range(n):\n            if used[i]:\n                continue  # 已用，跳过\n            used[i] = True; path.append(nums[i])  # 做选择\n            backtrack()\n            path.pop(); used[i] = False  # 撤销选择\n    backtrack()\n    return res",
+      "weight": 4
+    },
+    {
+      "id": "lc0047",
+      "type": "recall",
+      "stem": "LC 47 · 全排列 II：给定一个可包含重复数字的序列 nums，按任意顺序返回所有不重复的全排列。示例：输入 [1,1,2]，输出 [[1,1,2],[1,2,1],[2,1,1]]。",
+      "tags": [
+        "P1",
+        "Medium"
+      ],
+      "approach": {
+        "strategy": "排序后回溯，同层跳过相同数字去重",
+        "steps": [
+          "先排序使相等数字相邻",
+          "填数时若 nums[i]==nums[i-1] 且前一个同值未用，跳过该分支（同层剪枝去重）",
+          "used 数组加 path 收集，递归返回后撤销选择"
+        ],
+        "timeCx": "O(n·n!)",
+        "spaceCx": "O(n)"
+      },
+      "pseudocode": "先对 nums 排序\nbacktrack():\n    若 path 满 n 位: 收集拷贝; 返回\n    for i in 0..n-1:\n        若 used[i] 或 (i>0 且 nums[i]==nums[i-1] 且 used[i-1] 为假): 跳过  # 同层去重\n        选择 nums[i] 并递归\n        撤销选择\n返回 res",
+      "code": "def permuteUnique(nums):\n    nums.sort()  # 排序使相等数字相邻\n    n = len(nums); res, path, used = [], [], [False] * n\n    def backtrack():\n        if len(path) == n:\n            res.append(path.copy())  # 收集完整排列\n            return\n        for i in range(n):\n            if used[i] or (i > 0 and nums[i] == nums[i - 1] and not used[i - 1]):\n                continue  # 已用或同层重复，剪枝\n            used[i] = True; path.append(nums[i])  # 做选择\n            backtrack()\n            path.pop(); used[i] = False  # 撤销选择\n    backtrack()\n    return res",
+      "weight": 3
+    },
+    {
+      "id": "lc0078",
+      "type": "recall",
+      "stem": "LC 78 · 子集：给定一个不含重复元素的整数数组 nums，返回其所有子集（幂集），解集不能包含重复子集，可按任意顺序返回。示例：输入 nums=[1,2,3]，输出 [[],[1],[2],[1,2],[3],[1,3],[2,3],[1,2,3]]（顺序不限）。",
+      "tags": [
+        "P0",
+        "Medium"
+      ],
+      "approach": {
+        "strategy": "回溯：start 控制起点，每个节点即一个子集",
+        "steps": [
+          "每层递归入口先把 path 拷贝进结果（每个节点对应一个子集）",
+          "从 start 遍历到末尾，选 nums[i] 后以 i+1 递归（只向右选，避免重复）",
+          "递归返回后弹出末尾回溯"
+        ],
+        "timeCx": "O(n·2^n)",
+        "spaceCx": "O(n)"
+      },
+      "pseudocode": "backtrack(start):\n    先把 path 拷贝收进 res（每个节点都是子集）\n    for i in start..n-1:\n        path 追加 nums[i]\n        backtrack(i+1)\n        path 弹尾\n从 backtrack(0) 开始\n返回 res",
+      "code": "def subsets(nums):\n    res, path = [], []\n    def backtrack(start):\n        res.append(path.copy())  # 每个节点都是一个子集\n        for i in range(start, len(nums)):\n            path.append(nums[i])  # 做选择\n            backtrack(i + 1)  # 只向右选\n            path.pop()  # 撤销选择\n    backtrack(0)\n    return res",
+      "weight": 4
+    },
+    {
+      "id": "lc0039",
+      "type": "recall",
+      "stem": "LC 39 · 组合总和：给定一个无重复元素的正整数数组 candidates 和目标数 target，找出所有使数字和等于 target 的组合；candidates 中同一数字可无限次重复选取，解集不能包含重复组合。示例：输入 candidates=[2,3,6,7]、target=7，输出 [[2,2,3],[7]]。",
+      "tags": [
+        "P1",
+        "Medium"
+      ],
+      "approach": {
+        "strategy": "回溯加剪枝：start 防重复组合，可重复选当前数",
+        "steps": [
+          "递归携带 start 与剩余目标 rest，从 start 遍历，i 不前移即可重复选同一数",
+          "candidates[i] 大于 rest 时剪枝跳过，rest 减成 0 时收集一份拷贝",
+          "path 选入与弹出成对（回溯）"
+        ],
+        "timeCx": "O(n^(T/m))，m 为最小候选值",
+        "spaceCx": "O(T/m)"
+      },
+      "pseudocode": "backtrack(start, rest):\n    若 rest == 0: 收集 path 拷贝; 返回\n    for i in start..末尾:\n        若 candidates[i] > rest: 跳过  # 剪枝\n        path 追加 candidates[i]\n        backtrack(i, rest - candidates[i])  # i 不加 1，可重复选\n        path 弹尾\n从 backtrack(0, target) 开始\n返回 res",
+      "code": "def combinationSum(c, target):\n    res, path = [], []\n    def backtrack(start, rest):\n        if rest == 0:\n            res.append(path.copy())  # 凑出目标，收集\n            return\n        for i in range(start, len(c)):\n            if c[i] > rest:\n                continue  # 剪枝：超出剩余目标\n            path.append(c[i])\n            backtrack(i, rest - c[i])  # i 不前移，可重复选\n            path.pop()\n    backtrack(0, target)\n    return res",
+      "weight": 3
+    },
+    {
+      "id": "lc0022",
+      "type": "recall",
+      "stem": "LC 22 · 括号生成：给定 n 对括号，生成所有可能且有效的括号组合。示例：输入 n=3，输出 [\"((()))\",\"(()())\",\"(())()\",\"()(())\",\"()()()\"]。",
+      "tags": [
+        "P0",
+        "Medium"
+      ],
+      "approach": {
+        "strategy": "回溯：按左右括号计数逐位拼串",
+        "steps": [
+          "已用左括号 open 小于 n 时可放左括号",
+          "已用右括号 close 小于 open 时才可放右括号，保证前缀合法",
+          "串长达到 2n 时收集连接结果"
+        ],
+        "timeCx": "O(4^n/√n)",
+        "spaceCx": "O(n)"
+      },
+      "pseudocode": "backtrack(open, close):\n    若 len(path) == 2n: 收集 ''.join(path); 返回\n    若 open < n: 放 '(' 递归后撤销\n    若 close < open: 放 ')' 递归后撤销\n从 (0,0) 开始\n返回 res",
+      "code": "def generateParenthesis(n):\n    res, path = [], []\n    def backtrack(open_, close):\n        if len(path) == 2 * n:\n            res.append(''.join(path))  # 收集一个合法组合\n            return\n        if open_ < n:  # 左括号还有余量\n            path.append('('); backtrack(open_ + 1, close); path.pop()\n        if close < open_:  # 右括号不能超过左括号\n            path.append(')'); backtrack(open_, close + 1); path.pop()\n    backtrack(0, 0)\n    return res",
+      "weight": 4
+    },
+    {
+      "id": "lc0079",
+      "type": "recall",
+      "stem": "LC 79 · 单词搜索：给定 m×n 二维字符网格 board 和字符串 word，判断 word 是否存在于网格中；单词必须由相邻单元格（上下左右）的字母按顺序组成，同一单元格内的字母在一个单词中不允许被重复使用。示例：输入 board=[[\"A\",\"B\",\"C\",\"E\"],[\"S\",\"F\",\"C\",\"S\"],[\"A\",\"D\",\"E\",\"E\"]]、word=\"ABCCED\"，输出 true。",
+      "tags": [
+        "P1",
+        "Medium"
+      ],
+      "images": [
+        "img/lc0079-1.jpg",
+        "img/lc0079-2.jpg",
+        "img/lc0079-3.jpg"
+      ],
+      "approach": {
+        "strategy": "网格 DFS 回溯：逐格试起点，原位标记防重入",
+        "steps": [
+          "以每个格子为起点做 DFS，首字符不匹配直接失败",
+          "匹配第 k 位时把当前格置 '#' 防止重复进入，向上下左右递归匹配第 k+1 位",
+          "四方向都失败则恢复原字符（回溯）；k 达到词长即成功"
+        ],
+        "timeCx": "O(mn·3^L)",
+        "spaceCx": "O(L)"
+      },
+      "pseudocode": "以每个格子 (i,j) 为起点调 dfs(x, y, k):\n    若 k == 词长: 返回真\n    若越界或 board[x][y] != word[k]: 返回假\n    置 board[x][y]='#'  # 原位标记防重入\n    对上下左右四方向递归 dfs(..., k+1)，任一为真即成功\n    恢复 board[x][y] 原字符  # 回溯\n任一起点成功返回真，否则假",
+      "code": "def exist(board, word):\n    m, n = len(board), len(board[0])\n    def dfs(x, y, k):\n        if k == len(word):\n            return True  # 整词匹配完成\n        if not (0 <= x < m and 0 <= y < n) or board[x][y] != word[k]:\n            return False\n        board[x][y] = '#'  # 标记已访问\n        ok = any(dfs(x + dx, y + dy, k + 1)\n                 for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)))\n        board[x][y] = word[k]  # 回溯，恢复字符\n        return ok\n    return any(dfs(i, j, 0) for i in range(m) for j in range(n))",
+      "weight": 3
+    },
+    {
+      "id": "lc0131",
+      "type": "recall",
+      "stem": "LC 131 · 分割回文串：给定字符串 s，将 s 分割成若干子串，使每个子串都是回文串，返回 s 所有可能的分割方案。示例：输入 s=\"aab\"，输出 [[\"a\",\"a\",\"b\"],[\"aa\",\"b\"]]。",
+      "tags": [
+        "P2",
+        "Medium"
+      ],
+      "approach": {
+        "strategy": "回溯切分：枚举回文前缀，递归剩余后缀",
+        "steps": [
+          "从 start 枚举 end，子串 s[start..end] 是回文才切下该段",
+          "path 收集该段后从 end+1 递归切剩余部分",
+          "start 到达串尾时收集 path 拷贝；递归返回后弹出回溯"
+        ],
+        "timeCx": "O(n·2^n)",
+        "spaceCx": "O(n)"
+      },
+      "pseudocode": "backtrack(start):\n    若 start == 串尾: 收集 path 拷贝; 返回\n    for end in start..串尾:\n        sub = s[start..end]\n        若 sub 等于其反转（回文）:\n            path 追加 sub\n            backtrack(end+1)\n            path 弹尾\n返回 res",
+      "code": "def partition(s):\n    res, path = [], []\n    def backtrack(start):\n        if start == len(s):\n            res.append(path.copy())  # 收集一种切法\n            return\n        for end in range(start, len(s)):\n            sub = s[start:end + 1]\n            if sub == sub[::-1]:  # 判断回文\n                path.append(sub)\n                backtrack(end + 1)  # 切剩余部分\n                path.pop()\n    backtrack(0)\n    return res",
+      "weight": 2
+    },
+    {
+      "id": "lc0051",
+      "type": "recall",
+      "stem": "LC 51 · N 皇后：在 n×n 棋盘上放置 n 个皇后，使它们互不攻击（任意两皇后不同行、不同列、不同对角线），返回所有解的棋盘布局，'Q' 表示皇后、'.' 表示空位。示例：输入 n=4，输出 [[\".Q..\",\"...Q\",\"Q...\",\"..Q.\"],[\"..Q.\",\"Q...\",\"...Q\",\".Q..\"]]。",
+      "tags": [
+        "P2",
+        "Hard"
+      ],
+      "images": [
+        "img/lc0051-1.jpg"
+      ],
+      "approach": {
+        "strategy": "按行回溯：列与两条对角线集合判冲突",
+        "steps": [
+          "逐行放置，每行枚举列 c，天然保证不同行",
+          "c、row-c、row+c 分别不在列集、主对角集、副对角集才可放",
+          "放置后三集合加标记并递归下一行，返回后撤销；row==n 时按各行列号拼出棋盘收集"
+        ],
+        "timeCx": "O(n!)",
+        "spaceCx": "O(n)"
+      },
+      "pseudocode": "backtrack(row):\n    若 row == n: 按 path 各行的列号拼 'Q'/'.' 行收集; 返回\n    for c in 0..n-1:\n        若 c 或 row-c 或 row+c 已在冲突集合: 跳过\n        三集合加标记; path 追加 c\n        backtrack(row+1)\n        path 弹尾; 三集合去标记\n返回 res",
+      "code": "def solveNQueens(n):\n    res, path = [], []\n    cols, dg1, dg2 = set(), set(), set()  # 列、主对角、副对角\n    def backtrack(row):\n        if row == n:\n            res.append(['.' * c + 'Q' + '.' * (n - c - 1) for c in path])\n            return\n        for c in range(n):\n            if c in cols or row - c in dg1 or row + c in dg2:\n                continue  # 冲突剪枝\n            cols.add(c); dg1.add(row - c); dg2.add(row + c); path.append(c)\n            backtrack(row + 1)\n            path.pop(); cols.remove(c); dg1.remove(row - c); dg2.remove(row + c)\n    backtrack(0)\n    return res",
+      "weight": 2
+    }
+  ]
+}

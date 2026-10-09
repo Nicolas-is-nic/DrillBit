@@ -1,0 +1,104 @@
+{
+  "id": "algo-two-pointer",
+  "name": "算法 · 双指针",
+  "version": 1,
+  "updatedAt": "10-08",
+  "questions": [
+    {
+      "id": "lc0015",
+      "type": "recall",
+      "stem": "LC 15 · 三数之和：给你整数数组 nums，返回所有和为 0 且不重复的三元组，三元组内下标互不相同。答案不可包含重复三元组。示例：输入 nums = [-1,0,1,2,-1,-4]，输出 [[-1,-1,2],[-1,0,1]]。",
+      "tags": [
+        "P0",
+        "Medium"
+      ],
+      "approach": {
+        "strategy": "排序后固定首数，双指针在余段找两数之和",
+        "steps": [
+          "数组排序；枚举首数下标 i，若与前一值相同则跳过去重",
+          "左右指针 l=i+1、r=末尾向中间靠拢：三数之和偏小移 l，偏大移 r",
+          "等于 0 时收录三元组，l、r 各自跳过重复值后再各进一格",
+          "nums[i] 大于 0 时可提前结束"
+        ],
+        "timeCx": "O(n^2)",
+        "spaceCx": "O(1)"
+      },
+      "pseudocode": "排序 nums\nfor i in 0..n-3:\n    if nums[i] > 0: 跳出\n    if i>0 且 nums[i]==nums[i-1]: continue\n    l = i+1, r = n-1\n    while l < r:\n        s = nums[i]+nums[l]+nums[r]\n        if s < 0: l += 1\n        elif s > 0: r -= 1\n        else:\n            收录 [nums[i],nums[l],nums[r]]\n            l、r 跳过重复值后各进一格\nreturn 结果",
+      "code": "def threeSum(nums):\n    nums.sort(); res = []\n    for i in range(len(nums) - 2):\n        if i and nums[i] == nums[i-1]: continue   # 首数去重\n        if nums[i] > 0: break                     # 最小值大于 0，提前结束\n        l, r = i + 1, len(nums) - 1\n        while l < r:\n            s = nums[i] + nums[l] + nums[r]\n            if s < 0: l += 1                      # 和偏小左移\n            elif s > 0: r -= 1                    # 和偏大右移\n            else:\n                res.append([nums[i], nums[l], nums[r]]); l += 1; r -= 1\n                while l < r and nums[l] == nums[l-1]: l += 1   # 跳重复\n                while l < r and nums[r] == nums[r+1]: r -= 1\n    return res",
+      "weight": 4
+    },
+    {
+      "id": "lc0011",
+      "type": "recall",
+      "stem": "LC 11 · 盛最多水的容器：给定 n 个非负整数 height，每个数表示坐标点 (i, height[i]) 处一条垂直于 x 轴的线，找出两条线与 x 轴共同构成的容器可容纳最多的水量。注意容器不能倾斜。示例：输入 height = [1,8,6,2,5,4,8,3,7]，输出 49。",
+      "tags": [
+        "P0",
+        "Medium"
+      ],
+      "approach": {
+        "strategy": "首尾双指针，每轮移动短板一侧",
+        "steps": [
+          "指针 l、r 从两端出发，面积取 min(height[l],height[r]) 乘以宽度，更新最大值",
+          "移动较高板宽度变小且高度受限，面积不可能更大，故每轮移动较矮一侧",
+          "两指针相遇即止"
+        ],
+        "timeCx": "O(n)",
+        "spaceCx": "O(1)"
+      },
+      "pseudocode": "l = 0, r = n-1, 最大 = 0\nwhile l < r:\n    面积 = min(height[l], height[r]) * (r-l)\n    最大 = max(最大, 面积)\n    if height[l] < height[r]: l += 1\n    else: r -= 1\nreturn 最大",
+      "code": "def maxArea(height):\n    l, r, best = 0, len(height) - 1, 0\n    while l < r:\n        area = min(height[l], height[r]) * (r - l)  # 短板决定水位\n        best = max(best, area)\n        if height[l] < height[r]:                   # 移动短板侧\n            l += 1\n        else:\n            r -= 1\n    return best",
+      "weight": 4,
+      "images": [
+        "img/lc0011-1.jpg"
+      ]
+    },
+    {
+      "id": "lc0042",
+      "type": "recall",
+      "stem": "LC 42 · 接雨水：给定 n 个非负整数表示每个宽度为 1 的柱子的高度图，计算按此排列的柱子下雨之后能接多少雨水。示例：输入 height = [0,1,0,2,1,0,1,3,2,1,2,1]，输出 6。",
+      "tags": [
+        "P2",
+        "Hard"
+      ],
+      "approach": {
+        "strategy": "双指针在线维护左右最大值，矮侧结算水位",
+        "steps": [
+          "指针 l、r 从两端向中间扫，维护左侧最大 leftMax 与右侧最大 rightMax",
+          "每轮结算较矮一侧：其水位由本侧最大值决定，累加 max(单侧最大减柱高,0)",
+          "结算后移动对应指针并更新单侧最大",
+          "核心依据：一侧单侧最大更小时，该格水位与另一侧无关，可安全结算"
+        ],
+        "timeCx": "O(n)",
+        "spaceCx": "O(1)"
+      },
+      "pseudocode": "l = 0, r = n-1, leftMax = 0, rightMax = 0, 雨水 = 0\nwhile l <= r:\n    if leftMax < rightMax:\n        雨水 += max(leftMax - height[l], 0)\n        leftMax = max(leftMax, height[l])\n        l += 1\n    else:\n        雨水 += max(rightMax - height[r], 0)\n        rightMax = max(rightMax, height[r])\n        r -= 1\nreturn 雨水",
+      "code": "def trap(height):\n    l, r = 0, len(height) - 1\n    lmax = rmax = water = 0\n    while l <= r:\n        if lmax < rmax:                     # 左侧是瓶颈\n            water += max(lmax - height[l], 0)\n            lmax = max(lmax, height[l])\n            l += 1\n        else:                               # 右侧是瓶颈\n            water += max(rmax - height[r], 0)\n            rmax = max(rmax, height[r])\n            r -= 1\n    return water",
+      "weight": 2,
+      "images": [
+        "img/lc0042-1.png"
+      ]
+    },
+    {
+      "id": "lc0088",
+      "type": "recall",
+      "stem": "LC 88 · 合并两个有序数组：给你两个按非递减排序的整数数组 nums1 与 nums2，nums1 空间大小为 m+n，其中末尾 n 个位置填 0 表示占位。请合并 nums2 到 nums1 中，使合并后的数组仍按非递减排序。示例：输入 nums1 = [1,2,3,0,0,0]，m = 3，nums2 = [2,5,6]，n = 3，输出 [1,2,2,3,5,6]。",
+      "tags": [
+        "P1",
+        "Easy"
+      ],
+      "approach": {
+        "strategy": "逆向三指针从尾部归并，免搬移",
+        "steps": [
+          "指针 i=m-1、j=n-1、k=m+n-1 分别指向两数组有效尾部与写入位",
+          "每轮取两指针指向的较大者放入 k 位置，对应指针左移",
+          "j 先用尽即完成；i 先用尽时剩余 nums2 继续拷入，仍由同一循环覆盖"
+        ],
+        "timeCx": "O(m+n)",
+        "spaceCx": "O(1)"
+      },
+      "pseudocode": "i = m-1, j = n-1, k = m+n-1\nwhile j >= 0:\n    if i >= 0 且 nums1[i] > nums2[j]:\n        nums1[k] = nums1[i]; i -= 1\n    else:\n        nums1[k] = nums2[j]; j -= 1\n    k -= 1",
+      "code": "def merge(nums1, m, nums2, n):\n    i, j, k = m - 1, n - 1, m + n - 1\n    while j >= 0:                       # nums2 用完即结束\n        if i >= 0 and nums1[i] > nums2[j]:\n            nums1[k] = nums1[i]         # 取较大者放尾部\n            i -= 1\n        else:\n            nums1[k] = nums2[j]\n            j -= 1\n        k -= 1",
+      "weight": 3
+    }
+  ]
+}

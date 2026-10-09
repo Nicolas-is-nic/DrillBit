@@ -1,45 +1,121 @@
 {
   "id": "algo-stack",
-  "name": "算法回忆卡 · 单调栈与二分",
-  "version": 1,
+  "name": "算法 · 栈与队列",
+  "version": 2,
   "updatedAt": "10-08",
   "questions": [
     {
-      "id": "r-0001", "type": "recall",
-      "stem": "LC 84 · 柱状图中最大的矩形：给定 n 个非负整数，表示柱状图中各柱的宽度为 1、高度为 heights[i]。求在该柱状图中，能够勾勒出来的矩形的最大面积。",
-      "tags": ["题眼：单调栈", "Hard"],
-      "images": ["img/lc84-hist.png"],
+      "id": "lc0020",
+      "type": "recall",
+      "stem": "LC 20 · 有效的括号：给定只含字符 '()[]{}' 的字符串 s，判断是否有效：左括号必须以正确顺序被相同类型的右括号闭合。长度 1 到 10^4。示例：输入 s=\"()[]{}\"，输出 true；输入 s=\"(]\"，输出 false。",
+      "tags": [
+        "P0",
+        "Easy"
+      ],
       "approach": {
-        "strategy": "单调栈（栈内高度递增）",
+        "strategy": "栈做配对，左括号入栈右括号弹栈核对",
         "steps": [
-          "栈存下标，底到顶对应高度严格递增",
-          "当前柱比栈顶矮则弹栈顶结算：高为弹出柱高，宽为 i 减新栈顶再减 1（栈空则宽为 i）",
-          "末尾加高度 0 的哨兵柱，强制清空栈收尾"
+          "配对字典存右括号到左括号的映射，顺序扫描字符串",
+          "左括号压栈；右括号时栈顶必须是对应左括号并弹出，否则无效",
+          "结束或栈空遇右括号无效；扫描完返回栈是否为空"
         ],
         "timeCx": "O(n)",
         "spaceCx": "O(n)"
       },
-      "pseudocode": "stack = 空栈\nans = 0\nh 末尾追加高度 0\nfor 每根柱 i:\n    while 栈非空 且 h[栈顶] >= h[i]:\n        t = 弹栈\n        left = 栈空 ? -1 : 新栈顶\n        ans = max(ans, h[t] * (i - left - 1))\n    i 入栈\nreturn ans",
-      "code": "def largestRectangleArea(h):\n    stack, ans = [], 0\n    h.append(0)  # 哨兵：收尾清栈\n    for i, cur in enumerate(h):\n        while stack and h[stack[-1]] >= cur:\n            ht = h[stack.pop()]\n            left = stack[-1] if stack else -1\n            ans = max(ans, ht * (i - left - 1))\n        stack.append(i)\n    return ans",
-      "weight": 5
+      "pseudocode": "pairs = {')':'(', ']':'[', '}':'{'}\nstack = 空栈\nfor ch in s:\n    ch 是左括号: 入栈\n    否则: 栈空或栈顶 != pairs[ch] 则 false，否则弹栈\nreturn 栈为空",
+      "code": "def isValid(s):\n    pairs = {')': '(', ']': '[', '}': '{'}\n    stack = []\n    for ch in s:\n        if ch not in pairs:      # 左括号入栈\n            stack.append(ch)\n        elif not stack or stack.pop() != pairs[ch]:\n            return False         # 右括号配不上\n    return not stack             # 栈空才有效",
+      "weight": 4
     },
     {
-      "id": "r-0002", "type": "recall",
-      "stem": "LC 704 · 二分查找：给定一个 n 个元素有序的（升序）整型数组 nums 和一个目标值 target，写一个函数搜索 nums 中的 target，如果目标值存在返回下标，否则返回 -1。",
-      "tags": ["题眼：二分查找", "Easy"],
+      "id": "lc0155",
+      "type": "recall",
+      "stem": "LC 155 · 最小栈：设计支持 push、pop、top 与 getMin 操作的栈，getMin 需在常数时间内取得栈内最小元素。pop 与 top 调用时栈保证非空。示例：MinStack 依次 push(-2)、push(0)、push(-3)，getMin() 返回 -3，pop 后 top() 返回 0、getMin() 返回 -2。",
+      "tags": [
+        "P1",
+        "Medium"
+      ],
       "approach": {
-        "strategy": "闭区间经典二分",
+        "strategy": "辅助栈与主栈同步压入，栈顶恒为当前最小",
         "steps": [
-          "区间用闭区间，初始化 left=0、right=n-1",
-          "mid 取 left 加 (right 减 left) 除以 2，防大数溢出",
-          "相等即返回 mid；nums[mid] 小于目标则 left=mid+1，大于则 right=mid-1",
-          "left 大于 right 时区间已空，返回 -1"
+          "主栈 st 存数据，最小栈 mn 每次压入当前值与 mn 栈顶的较小者",
+          "pop 时两栈同步弹出，mn 栈顶即对应历史每层的最小值",
+          "getMin 直接读 mn 栈顶，常数时间"
         ],
-        "timeCx": "O(log n)",
-        "spaceCx": "O(1)"
+        "timeCx": "O(1) 单次操作",
+        "spaceCx": "O(n)"
       },
-      "pseudocode": "left, right = 0, n-1\nwhile left <= right:\n    mid = left + (right - left) / 2\n    if nums[mid] == target: return mid\n    if nums[mid] < target: left = mid + 1\n    else: right = mid - 1\nreturn -1",
-      "code": "def search(nums, target):\n    left, right = 0, len(nums) - 1\n    while left <= right:\n        mid = (left + right) // 2\n        if nums[mid] == target:\n            return mid\n        if nums[mid] < target:\n            left = mid + 1\n        else:\n            right = mid - 1\n    return -1",
+      "pseudocode": "push(val)：主栈入 val；mn 栈入 min(val, mn 栈顶或 val)\npop()：两栈同步弹出\ntop()：返回主栈顶\ngetMin()：返回 mn 栈顶",
+      "code": "class MinStack:\n    def __init__(self):\n        self.st, self.mn = [], []\n    def push(self, val):\n        self.st.append(val)      # 主栈入数据\n        self.mn.append(min(val, self.mn[-1] if self.mn else val))\n    def pop(self):\n        self.st.pop(); self.mn.pop()  # 两栈同步\n    def top(self):\n        return self.st[-1]\n    def getMin(self):\n        return self.mn[-1]       # 栈顶即当前最小",
+      "weight": 3
+    },
+    {
+      "id": "lc0739",
+      "type": "recall",
+      "stem": "LC 739 · 每日温度：给定每日温度数组 temperatures，对每一天求还需等待几天才出现更高温度；等不到记 0。长度 1 到 10^5，温度 30 到 100。示例：输入 [73,74,75,71,69,72,76,73]，输出 [1,1,4,2,1,1,0,0]。",
+      "tags": [
+        "P0",
+        "Medium"
+      ],
+      "approach": {
+        "strategy": "单调递减下标栈，遇更高温度回填等待天数",
+        "steps": [
+          "栈存尚未遇到更高温度的天下标，栈内温度自底向顶单调递减",
+          "遍历到更高温度时，逐个弹出比它低的栈顶下标并回填天数差",
+          "当前下标入栈；扫描结束后栈中剩余天答案保持 0"
+        ],
+        "timeCx": "O(n)",
+        "spaceCx": "O(n)"
+      },
+      "pseudocode": "stack = 空栈（存下标）\nans = 全 0\nfor i in 0..n-1:\n    while 栈非空且 t[栈顶] < t[i]:\n        j = 弹栈\n        ans[j] = i - j     # 等待天数\n    i 入栈\nreturn ans",
+      "code": "def dailyTemperatures(t):\n    ans = [0] * len(t)\n    stack = []                # 下标栈，温度单调递减\n    for i, x in enumerate(t):\n        while stack and t[stack[-1]] < x:\n            j = stack.pop()\n            ans[j] = i - j    # 回填等待天数\n        stack.append(i)\n    return ans",
+      "weight": 4
+    },
+    {
+      "id": "lc0084",
+      "type": "recall",
+      "stem": "LC 84 · 柱状图中最大的矩形：给定 n 个非负整数表示柱状图中各柱高度（每柱宽度为 1），求能勾勒出的矩形最大面积。n 为 1 到 10^5。示例：输入 heights=[2,1,5,6,2,3]，输出 10（高 5 与 6 两柱构成 5×2 的矩形）。",
+      "tags": [
+        "P1",
+        "Hard"
+      ],
+      "images": [
+        "img/lc0084-1.jpg",
+        "img/lc0084-2.jpg"
+      ],
+      "approach": {
+        "strategy": "单调递增栈定每柱左右首个更矮边界取最大",
+        "steps": [
+          "首尾各拼一个高度 0 的哨兵柱，强制清空栈并统一边界处理",
+          "栈存柱下标、高度单调递增；新柱更矮时弹栈：弹出柱高为矩形高",
+          "面积 = 弹出柱高 × (当前下标 i - 弹后栈顶下标 - 1)，左开右开即两侧首个更矮柱，过程中取最大"
+        ],
+        "timeCx": "O(n)",
+        "spaceCx": "O(n)"
+      },
+      "pseudocode": "hs = [0] + heights + [0]     # 首尾哨兵\nstack = 空栈，best = 0\nfor i, h in hs:\n    while 栈非空且 hs[栈顶] > h:\n        高 = hs[弹栈]\n        best = max(best, 高 × (i - 栈顶 - 1))\n    i 入栈\nreturn best",
+      "code": "def largestRectangleArea(hs):\n    hs = [0] + hs + [0]       # 首尾哨兵\n    stack, best = [], 0\n    for i, h in enumerate(hs):\n        while stack and hs[stack[-1]] > h:\n            height = hs[stack.pop()]   # 弹出柱为高\n            best = max(best, height * (i - stack[-1] - 1))\n        stack.append(i)\n    return best",
+      "weight": 3
+    },
+    {
+      "id": "lc0394",
+      "type": "recall",
+      "stem": "LC 394 · 字符串解码：给定编码字符串 s，规则 k[encoded_string] 表示方括号内的字符串重复 k 次；k 为正整数，括号可嵌套，输入保证合法。解码并返回原文。示例：输入 s=\"3[a]2[bc]\"，输出 \"aaabcbc\"；输入 s=\"3[a2[c]]\"，输出 \"accaccacc\"。",
+      "tags": [
+        "P1",
+        "Medium"
+      ],
+      "approach": {
+        "strategy": "双栈暂存外层串与倍数，遇右括号弹出展开",
+        "steps": [
+          "顺序扫描：数字累积为倍数 num，字母追加到当前串 res",
+          "遇 [ 时把（res, num）压入双栈，随后清空 res、归零 num 进入内层",
+          "遇 ] 时弹出外层串与倍数，res = 外层串 + res × k；扫描结束 res 即答案"
+        ],
+        "timeCx": "O(展开后长度)",
+        "spaceCx": "O(展开后长度)"
+      },
+      "pseudocode": "res = 空串，num = 0，栈存（串， 倍数）\nfor ch in s:\n    数字: num = num*10 + ch\n    '[': 压 (res, num)，res 清空，num 归 0\n    ']': 弹出 (外层, k)，res = 外层 + res*k\n    字母: res 追加 ch\nreturn res",
+      "code": "def decodeString(s):\n    res, num, st_p, st_n = '', 0, [], []\n    for ch in s:\n        if ch.isdigit():\n            num = num * 10 + int(ch)    # 累积倍数\n        elif ch == '[':\n            st_p.append(res); st_n.append(num)\n            res, num = '', 0            # 清空进内层\n        elif ch == ']':\n            res = st_p.pop() + res * st_n.pop()  # 展开拼接\n        else:\n            res += ch\n    return res",
       "weight": 3
     }
   ]

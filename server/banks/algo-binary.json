@@ -1,0 +1,121 @@
+{
+  "id": "algo-binary",
+  "name": "算法 · 二分查找",
+  "version": 1,
+  "updatedAt": "10-08",
+  "questions": [
+    {
+      "id": "lc0704",
+      "type": "recall",
+      "stem": "LC 704 · 二分查找：给定 n 个元素升序排列的整型数组 nums 与目标值 target，实现函数搜索 target 的下标，存在返回下标，不存在返回 -1。示例：输入 nums = [-1,0,3,5,9,12]，target = 9，输出 4。",
+      "tags": [
+        "P1",
+        "Easy"
+      ],
+      "approach": {
+        "strategy": "闭区间左右指针，中点比较各砍一半",
+        "steps": [
+          "l=0、r=n-1 维护闭区间，循环条件 l 小于等于 r",
+          "mid 取中点：等于目标返回；nums[mid] 偏小则 l=mid+1，偏大则 r=mid-1",
+          "区间为空即 l 大于 r 时未找到，返回 -1"
+        ],
+        "timeCx": "O(log n)",
+        "spaceCx": "O(1)"
+      },
+      "pseudocode": "l = 0, r = n-1\nwhile l <= r:\n    mid = (l+r) // 2\n    if nums[mid] == target: return mid\n    elif nums[mid] < target: l = mid+1\n    else: r = mid-1\nreturn -1",
+      "code": "def search(nums, target):\n    l, r = 0, len(nums) - 1      # 闭区间 [l, r]\n    while l <= r:\n        mid = (l + r) // 2\n        if nums[mid] == target:\n            return mid\n        if nums[mid] < target:   # 目标在右半\n            l = mid + 1\n        else:\n            r = mid - 1\n    return -1",
+      "weight": 3
+    },
+    {
+      "id": "lc0033",
+      "type": "recall",
+      "stem": "LC 33 · 搜索旋转排序数组：整数数组 nums 原为升序且元素互不相同，在预先未知的某个下标处经过了旋转。给你旋转后的 nums 与目标值 target，存在则返回其下标，不存在返回 -1，必须设计 O(log n) 算法。示例：输入 nums = [4,5,6,7,0,1,2]，target = 0，输出 4。",
+      "tags": [
+        "P0",
+        "Medium"
+      ],
+      "approach": {
+        "strategy": "二分后判断哪半有序，有序半内定界",
+        "steps": [
+          "取 mid，nums[mid] 等于目标直接返回",
+          "nums[l] 小于等于 nums[mid] 时左半有序：目标落在 [nums[l],nums[mid]) 内则收 r，否则收 l",
+          "否则右半有序：目标落在 (nums[mid],nums[r]] 内则收 l，否则收 r",
+          "每轮仍能排除一半，整体对数时间"
+        ],
+        "timeCx": "O(log n)",
+        "spaceCx": "O(1)"
+      },
+      "pseudocode": "l = 0, r = n-1\nwhile l <= r:\n    mid = (l+r) // 2\n    if nums[mid] == target: return mid\n    if nums[l] <= nums[mid]:\n        if nums[l] <= target < nums[mid]: r = mid-1\n        else: l = mid+1\n    else:\n        if nums[mid] < target <= nums[r]: l = mid+1\n        else: r = mid-1\nreturn -1",
+      "code": "def search(nums, target):\n    l, r = 0, len(nums) - 1\n    while l <= r:\n        mid = (l + r) // 2\n        if nums[mid] == target:\n            return mid\n        if nums[l] <= nums[mid]:                    # 左半有序\n            if nums[l] <= target < nums[mid]: r = mid - 1\n            else: l = mid + 1\n        elif nums[mid] < target <= nums[r]: l = mid + 1  # 右半有序且含目标\n        else: r = mid - 1\n    return -1",
+      "weight": 5
+    },
+    {
+      "id": "lc0153",
+      "type": "recall",
+      "stem": "LC 153 · 寻找旋转排序数组中的最小值：已知元素互不相同的升序数组在预先未知的下标处旋转了 k 次，请找出数组中的最小值，必须设计 O(log n) 算法。示例：输入 nums = [3,4,5,1,2]，输出 1。",
+      "tags": [
+        "P1",
+        "Medium"
+      ],
+      "approach": {
+        "strategy": "二分比较中点与右端点，收缩到最小侧",
+        "steps": [
+          "l、r 维护闭区间，循环内 mid 与 nums[r] 比较，与右端比可避免中点偏左的歧义",
+          "nums[mid] 大于 nums[r] 说明最小值在 mid 右侧，l=mid+1",
+          "否则 mid 本身可能就是最小值，r=mid",
+          "l 与 r 相遇处即最小值下标"
+        ],
+        "timeCx": "O(log n)",
+        "spaceCx": "O(1)"
+      },
+      "pseudocode": "l = 0, r = n-1\nwhile l < r:\n    mid = (l+r) // 2\n    if nums[mid] > nums[r]:\n        l = mid+1\n    else:\n        r = mid\nreturn nums[l]",
+      "code": "def findMin(nums):\n    l, r = 0, len(nums) - 1\n    while l < r:\n        mid = (l + r) // 2\n        if nums[mid] > nums[r]:   # 中点在旋转大段\n            l = mid + 1\n        else:                     # 最小在 mid 或其左\n            r = mid\n    return nums[l]",
+      "weight": 3
+    },
+    {
+      "id": "lc0034",
+      "type": "recall",
+      "stem": "LC 34 · 在排序数组中查找元素的第一个和最后一个位置：给你非递减排序的整数数组 nums 与目标值 target，找出 target 在数组中的开始位置和结束位置，不存在返回 [-1,-1]，必须设计 O(log n) 算法。示例：输入 nums = [5,7,7,8,8,10]，target = 8，输出 [3,4]。",
+      "tags": [
+        "P0",
+        "Medium"
+      ],
+      "approach": {
+        "strategy": "两次二分分别逼左边界与右边界",
+        "steps": [
+          "二分找左界：mid 命中 target 时记录下标并继续 r=mid-1 向左压缩",
+          "二分找右界：mid 命中 target 时记录下标并继续 l=mid+1 向右压缩",
+          "未命中时按大小关系收缩区间，两次均未命中返回 [-1,-1]"
+        ],
+        "timeCx": "O(log n)",
+        "spaceCx": "O(1)"
+      },
+      "pseudocode": "find(找左界):\n    l=0, r=n-1, pos=-1\n    while l <= r:\n        mid = (l+r) // 2\n        if nums[mid] == target:\n            pos = mid\n            if 找左界: r = mid-1\n            else: l = mid+1\n        elif nums[mid] < target: l = mid+1\n        else: r = mid-1\n    return pos\nreturn [find(左), find(右)]",
+      "code": "def searchRange(nums, target):\n    def find(first):\n        l, r, pos = 0, len(nums) - 1, -1\n        while l <= r:\n            mid = (l + r) // 2\n            if nums[mid] == target:\n                pos = mid                  # 命中后继续逼近\n                if first: r = mid - 1      # 找左界继续向左\n                else: l = mid + 1          # 找右界继续向右\n            elif nums[mid] < target:\n                l = mid + 1\n            else:\n                r = mid - 1\n        return pos\n    return [find(True), find(False)]",
+      "weight": 4
+    },
+    {
+      "id": "lc0004",
+      "type": "recall",
+      "stem": "LC 4 · 寻找两个正序数组的中位数：给定两个大小分别为 m 和 n 的升序数组 nums1 与 nums2，返回两者合并后的中位数，必须设计 O(log(m+n)) 算法。示例：输入 nums1 = [1,3]，nums2 = [2]，输出 2.0。",
+      "tags": [
+        "P2",
+        "Hard"
+      ],
+      "approach": {
+        "strategy": "短数组上二分分割线，左半恰含前 k 小",
+        "steps": [
+          "保证在较短数组 a 上二分分割线 i，另一数组分割线 j=(m+n+1)//2 减 i 随之确定",
+          "分割合法条件：两数组左半最大值均不超过对方右半最小值，即交叉比较 l1、r2 与 l2、r1",
+          "l1 大于 r2 说明分割偏大，hi=i-1；否则偏小，lo=i+1",
+          "合法后：总长为奇数取 max(l1,l2)，偶数取左最大与右最小的平均"
+        ],
+        "timeCx": "O(log min(m,n))",
+        "spaceCx": "O(1)"
+      },
+      "pseudocode": "保证 a 较短; m,n = 两数组长度; k = (m+n+1) // 2\nlo=0, hi=m\n循环:\n    i = (lo+hi) // 2; j = k - i\n    l1 = a[i-1] 若 i>0 否则 负无穷\n    r1 = a[i] 若 i<m 否则 正无穷\n    l2 = b[j-1] 若 j>0 否则 负无穷\n    r2 = b[j] 若 j<n 否则 正无穷\n    if l1 <= r2 且 l2 <= r1: 按总长奇偶返回\n    elif l1 > r2: hi = i-1\n    else: lo = i+1",
+      "code": "def findMedianSortedArrays(a, b):\n    if len(a) > len(b):\n        a, b = b, a                   # 在短数组上二分\n    m, n = len(a), len(b)\n    k = (m + n + 1) // 2              # 左半应含元素数\n    lo, hi = 0, m\n    while True:\n        i = (lo + hi) // 2; j = k - i # 另一数组分割自适应\n        l1 = a[i-1] if i else -1e9; r1 = a[i] if i < m else 1e9\n        l2 = b[j-1] if j else -1e9; r2 = b[j] if j < n else 1e9\n        if l1 <= r2 and l2 <= r1:     # 分割合法\n            left, right = max(l1, l2), min(r1, r2)\n            return left if (m + n) % 2 else (left + right) / 2\n        if l1 > r2: hi = i - 1        # 分割偏大\n        else: lo = i + 1              # 分割偏小",
+      "weight": 2
+    }
+  ]
+}

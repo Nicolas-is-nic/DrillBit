@@ -1,0 +1,74 @@
+{
+  "id": "algo-greedy",
+  "name": "算法 · 贪心",
+  "version": 1,
+  "updatedAt": "10-08",
+  "questions": [
+    {
+      "id": "lc0055",
+      "type": "recall",
+      "stem": "LC 55 · 跳跃游戏：给定非负整数数组 nums，你最初位于第一个下标，数组中每个元素代表在该位置可以跳跃的最大长度，判断是否能够到达最后一个下标。示例：输入 nums=[2,3,1,1,4]，输出 true（先跳 1 步到下标 1，再跳 3 步到末尾）。",
+      "tags": [
+        "P0",
+        "Medium"
+      ],
+      "approach": {
+        "strategy": "贪心：维护当前可到达的最远下标",
+        "steps": [
+          "遍历每个下标 i，若 i 超过最远可达 farthest 说明断链，返回 false",
+          "用 i+nums[i] 持续更新 farthest",
+          "遍历自然结束即代表可达末尾"
+        ],
+        "timeCx": "O(n)",
+        "spaceCx": "O(1)"
+      },
+      "pseudocode": "farthest = 0\nfor i in 0..末尾:\n    若 i > farthest: 返回假  # 当前格根本到不了\n    farthest = max(farthest, i + nums[i])\n返回真",
+      "code": "def canJump(nums):\n    farthest = 0  # 当前能到达的最远下标\n    for i, x in enumerate(nums):\n        if i > farthest:\n            return False  # 断链，走不到这里\n        farthest = max(farthest, i + x)\n    return True",
+      "weight": 4
+    },
+    {
+      "id": "lc0045",
+      "type": "recall",
+      "stem": "LC 45 · 跳跃游戏 II：给定非负整数数组 nums，你最初位于第一个下标，每个元素代表该位置最大跳跃长度，假设你总是可以到达最后一个下标，求到达末尾的最少跳跃次数。示例：输入 nums=[2,3,1,1,4]，输出 2（跳 1 步到下标 1，再 3 步到末尾）。",
+      "tags": [
+        "P1",
+        "Medium"
+      ],
+      "approach": {
+        "strategy": "贪心分层：当前边界走完即起跳一次",
+        "steps": [
+          "cur_end 为本跳可覆盖边界，next_end 为过程中探得的更远点",
+          "扫描到 i==cur_end 时步数加一，边界推进到 next_end",
+          "只遍历到倒数第二个下标，防止在末尾多算一步"
+        ],
+        "timeCx": "O(n)",
+        "spaceCx": "O(1)"
+      },
+      "pseudocode": "steps = cur_end = next_end = 0\nfor i in 0..n-2:  # 不含末下标\n    next_end = max(next_end, i + nums[i])\n    若 i == cur_end:  # 当前一跳范围走完\n        steps += 1\n        cur_end = next_end\n返回 steps",
+      "code": "def jump(nums):\n    steps = cur_end = next_end = 0\n    for i in range(len(nums) - 1):  # 不遍历末下标，防多算一步\n        next_end = max(next_end, i + nums[i])\n        if i == cur_end:  # 走完当前一跳范围\n            steps += 1\n            cur_end = next_end\n    return steps",
+      "weight": 3
+    },
+    {
+      "id": "lc0056",
+      "type": "recall",
+      "stem": "LC 56 · 合并区间：给定若干区间的集合 intervals，其中 intervals[i]=[start,end]，请合并所有重叠的区间并返回一个不重叠的区间数组，需覆盖输入中的所有区间。示例：输入 [[1,3],[2,6],[8,10],[15,18]]，输出 [[1,6],[8,10],[15,18]]。",
+      "tags": [
+        "P0",
+        "Medium"
+      ],
+      "approach": {
+        "strategy": "按左端排序后一次线性扫描合并",
+        "steps": [
+          "所有区间按左端点升序排序",
+          "当前区间左端不超过结果末区间的右端即重叠，右端取 max 合并",
+          "否则作为新区间追加进结果"
+        ],
+        "timeCx": "O(n log n)",
+        "spaceCx": "O(log n)"
+      },
+      "pseudocode": "按左端点排序 intervals\nres = 空列表\nfor 每个区间 [s, e]:\n    若 res 非空且 s <= res 末区间右端:  # 重叠\n        末区间右端 = max(右端, e)\n    否则:\n        res 追加 [s, e]\n返回 res",
+      "code": "def merge(intervals):\n    intervals.sort(key=lambda r: r[0])  # 按左端排序\n    res = []\n    for s, e in intervals:\n        if res and s <= res[-1][1]:  # 与末区间重叠\n            res[-1][1] = max(res[-1][1], e)\n        else:\n            res.append([s, e])\n    return res",
+      "weight": 4
+    }
+  ]
+}

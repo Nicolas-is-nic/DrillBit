@@ -1,0 +1,97 @@
+{
+  "id": "algo-hash",
+  "name": "算法 · 哈希",
+  "version": 1,
+  "updatedAt": "10-08",
+  "questions": [
+    {
+      "id": "lc0001",
+      "type": "recall",
+      "stem": "LC 1 · 两数之和：给定整数数组 nums 与目标值 target，找出数组中和为 target 的两个整数并返回其下标。每个输入恰好存在一个答案，同一元素不能重复使用，下标顺序不限。示例：输入 nums = [2,7,11,15]，target = 9，输出 [0,1]（2+7=9）。",
+      "tags": [
+        "P0",
+        "Easy"
+      ],
+      "approach": {
+        "strategy": "哈希表存值到下标，边扫边查补数",
+        "steps": [
+          "遍历数组，对每个 nums[i] 先查 target 减 nums[i] 是否已在哈希表，在则返回两下标",
+          "不在则把 nums[i] 到 i 的映射存入哈希表，继续扫描",
+          "先查后存保证同一元素不会用两次"
+        ],
+        "timeCx": "O(n)",
+        "spaceCx": "O(n)"
+      },
+      "pseudocode": "表 = 空哈希表\nfor i 从 0 到 len(nums)-1:\n    补数 = target - nums[i]\n    if 补数 在 表中:\n        return [表[补数], i]\n    表[nums[i]] = i\nreturn []",
+      "code": "def twoSum(nums, target):\n    seen = {}                       # 值到下标\n    for i, x in enumerate(nums):\n        need = target - x           # 需要的补数\n        if need in seen:\n            return [seen[need], i]\n        seen[x] = i                 # 先查后存防重复用\n    return []",
+      "weight": 4
+    },
+    {
+      "id": "lc0049",
+      "type": "recall",
+      "stem": "LC 49 · 字母异位词分组：给你字符串数组 strs，将字母异位词组合在一起，按任意顺序返回结果列表。异位词指由相同字母重排得到的单词，源单词每个字符恰好用一次。示例：输入 strs = [\"eat\",\"tea\",\"tan\",\"ate\",\"nat\",\"bat\"]，输出 [[\"bat\"],[\"nat\",\"tan\"],[\"ate\",\"eat\",\"tea\"]]。",
+      "tags": [
+        "P0",
+        "Medium"
+      ],
+      "approach": {
+        "strategy": "每词字符排序后的串作哈希分组键",
+        "steps": [
+          "遍历每个字符串，将其字符排序后拼接作为键 key",
+          "互为异位词的排序结果相同，用哈希表按 key 收集成列表",
+          "返回哈希表所有值组成的列表"
+        ],
+        "timeCx": "O(nk log k)",
+        "spaceCx": "O(nk)"
+      },
+      "pseudocode": "分组表 = 空哈希表\nfor 单词 in strs:\n    键 = 单词字符排序后拼接\n    分组表[键].append(单词)\nreturn 分组表所有值的列表",
+      "code": "from collections import defaultdict\ndef groupAnagrams(strs):\n    groups = defaultdict(list)\n    for w in strs:\n        key = ''.join(sorted(w))    # 排序串作分组键\n        groups[key].append(w)\n    return list(groups.values())",
+      "weight": 4
+    },
+    {
+      "id": "lc0128",
+      "type": "recall",
+      "stem": "LC 128 · 最长连续序列：给定未排序整数数组 nums，求数字连续的最长序列长度，序列要求数值连续，不要求元素在数组中相邻。设计并实现时间复杂度 O(n) 的算法。示例：输入 nums = [100,4,200,1,3,2]，输出 4（最长连续序列 [1,2,3,4]）。",
+      "tags": [
+        "P2",
+        "Medium"
+      ],
+      "approach": {
+        "strategy": "全部数入集合，只从序列起点向右数长度",
+        "steps": [
+          "数组全部数入哈希集合去重",
+          "遍历集合，仅当 x-1 不在集合即 x 是序列起点时，从 x 起连续查 x+1、x+2，数出序列长度",
+          "起点判断保证每个序列只完整数一次，整体仍 O(n)",
+          "用最大长度更新答案"
+        ],
+        "timeCx": "O(n)",
+        "spaceCx": "O(n)"
+      },
+      "pseudocode": "集合 = set(nums)\n最长 = 0\nfor x in 集合:\n    if x-1 不在 集合:\n        y = x\n        while y+1 在 集合:\n            y = y + 1\n        最长 = max(最长, y-x+1)\nreturn 最长",
+      "code": "def longestConsecutive(nums):\n    s = set(nums)\n    best = 0\n    for x in s:\n        if x - 1 not in s:      # 只从序列起点开始数\n            y = x\n            while y + 1 in s:\n                y += 1\n            best = max(best, y - x + 1)\n    return best",
+      "weight": 2
+    },
+    {
+      "id": "lc0560",
+      "type": "recall",
+      "stem": "LC 560 · 和为 K 的子数组：给你整数数组 nums 与整数 k，统计并返回该数组中和为 k 的连续子数组个数。示例：输入 nums = [1,1,1]，k = 2，输出 2（[1,1] 有两段）。",
+      "tags": [
+        "P0",
+        "Medium"
+      ],
+      "approach": {
+        "strategy": "前缀和加哈希计数，边扫边找 pre 减 k",
+        "steps": [
+          "维护当前前缀和 pre 与哈希表，键为历史前缀和，值为出现次数，初始含 {0:1}",
+          "每累加一个数后，答案累加表中 pre 减 k 的出现次数，即以当前元素结尾的和为 k 子数组数",
+          "再把 pre 计入表中，继续扫描"
+        ],
+        "timeCx": "O(n)",
+        "spaceCx": "O(n)"
+      },
+      "pseudocode": "计数表 = {0: 1}\npre = 0\n答案 = 0\nfor x in nums:\n    pre = pre + x\n    答案 += 计数表.get(pre - k, 0)\n    计数表[pre] += 1\nreturn 答案",
+      "code": "from collections import defaultdict\ndef subarraySum(nums, k):\n    cnt = defaultdict(int)\n    cnt[0] = 1               # 空前缀和为 0\n    pre = ans = 0\n    for x in nums:\n        pre += x\n        ans += cnt[pre - k]  # 以 x 结尾的和为 k 子数组数\n        cnt[pre] += 1\n    return ans",
+      "weight": 4
+    }
+  ]
+}

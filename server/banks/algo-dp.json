@@ -1,0 +1,505 @@
+{
+  "id": "algo-dp",
+  "name": "算法 · 动态规划",
+  "version": 1,
+  "updatedAt": "10-08",
+  "questions": [
+    {
+      "id": "lc0070",
+      "type": "recall",
+      "stem": "LC 70 · 爬楼梯：你在爬一个 n 阶楼梯，每次可以爬 1 或 2 个台阶，问有多少种不同的爬法。约束 1≤n≤45。示例：输入 n=3，输出 3（三种爬法为 1+1+1、1+2、2+1）。",
+      "tags": [
+        "P0",
+        "Easy"
+      ],
+      "approach": {
+        "strategy": "斐波那契递推，滚动两变量",
+        "steps": [
+          "设 f(i) 为爬到第 i 阶的方法数，则 f(i)=f(i-1)+f(i-2)（最后一步跨 1 阶或 2 阶）",
+          "初始 f(0)=1、f(1)=1，用 a、b 两变量滚动递推即可，无需数组",
+          "递推 n-1 轮后 b 即答案"
+        ],
+        "timeCx": "O(n)",
+        "spaceCx": "O(1)"
+      },
+      "pseudocode": "a = 1\nb = 1\n重复 n-1 次:\n    a, b = b, a+b\n返回 b",
+      "code": "def climbStairs(n):\n    a, b = 1, 1\n    for _ in range(n - 1):\n        a, b = b, a + b   # f(i)=f(i-1)+f(i-2)\n    return b",
+      "weight": 4
+    },
+    {
+      "id": "lc0198",
+      "type": "recall",
+      "stem": "LC 198 · 打家劫舍：沿街有一排房屋，每间房屋内有一定现金 nums[i]，不能偷相邻的两间，求一夜内能偷窃到的最高金额。约束 1≤len(nums)≤100，0≤nums[i]≤400。示例：输入 nums=[1,2,3,1]，输出 4（偷第 1 间和第 3 间）。",
+      "tags": [
+        "P0",
+        "Medium"
+      ],
+      "approach": {
+        "strategy": "线性 DP，偷或不偷取最大",
+        "steps": [
+          "设 cur 为考虑前 i 间的最高金额：不偷第 i 间则不变，偷第 i 间则 prev+nums[i]",
+          "转移 cur_new = max(cur, prev + x)，prev 与 cur 各前移一位",
+          "prev、cur 初始为 0，遍历结束 cur 即答案"
+        ],
+        "timeCx": "O(n)",
+        "spaceCx": "O(1)"
+      },
+      "pseudocode": "prev = 0\ncur = 0\n对每个房现金 x:\n    prev, cur = cur, max(cur, prev+x)\n返回 cur",
+      "code": "def rob(nums):\n    prev, cur = 0, 0\n    for x in nums:\n        prev, cur = cur, max(cur, prev + x)   # 不偷 cur / 偷 prev+x\n    return cur",
+      "weight": 4
+    },
+    {
+      "id": "lc0213",
+      "type": "recall",
+      "stem": "LC 213 · 打家劫舍 II：房屋围成一圈，所有房屋排成环状（第一间与最后一间相邻），其余规则同打家劫舍：不能偷相邻两间，求最高金额。示例：输入 nums=[2,3,2]，输出 3（不能同时偷第一间和最后一间，只能偷第 2 间）。",
+      "tags": [
+        "P1",
+        "Medium"
+      ],
+      "approach": {
+        "strategy": "环形拆两段线性，分别跑后取最大",
+        "steps": [
+          "首尾相邻，二者不可能同时被偷，拆成「偷不了最后一间」与「偷不了第一间」两种情况",
+          "情况一在 nums[1:] 上跑线性打家劫舍，情况二在 nums[:-1] 上跑",
+          "两段结果取最大；仅 1 间房时特判直接返回该值"
+        ],
+        "timeCx": "O(n)",
+        "spaceCx": "O(1)"
+      },
+      "pseudocode": "若只有 1 间: 返回其现金\n定义 line(a):\n    prev=0, cur=0\n    对每个 x: prev,cur = cur, max(cur,prev+x)\n    返回 cur\n返回 max(line(去首段), line(去尾段))",
+      "code": "def rob(nums):\n    if len(nums) == 1:\n        return nums[0]\n    def line(a):\n        prev, cur = 0, 0\n        for x in a:\n            prev, cur = cur, max(cur, prev + x)   # 线性打家劫舍\n        return cur\n    return max(line(nums[1:]), line(nums[:-1]))   # 拆两段取最大",
+      "weight": 3
+    },
+    {
+      "id": "lc0322",
+      "type": "recall",
+      "stem": "LC 322 · 零钱兑换：给你不同面额的硬币数组 coins 和总金额 amount，每种硬币数量无限，计算凑成总金额所需的最少硬币个数。凑不出返回 -1。示例：输入 coins=[1,2,5]、amount=11，输出 3（11=5+5+1）。",
+      "tags": [
+        "P0",
+        "Medium"
+      ],
+      "approach": {
+        "strategy": "完全背包求最少硬币数",
+        "steps": [
+          "设 dp[j] 为凑出金额 j 的最少硬币数，初始 dp[0]=0、其余为无穷大",
+          "对每个金额 j 尝试每种硬币 c：dp[j]=min(dp[j], dp[j-c]+1)",
+          "dp[amount] 仍为无穷大则返回 -1，否则即答案"
+        ],
+        "timeCx": "O(amount×len(coins))",
+        "spaceCx": "O(amount)"
+      },
+      "pseudocode": "dp = [0] + [无穷大]*amount\n对 j 从 1 到 amount:\n    对每个硬币 c（c≤j）:\n        dp[j] = min(dp[j], dp[j-c]+1)\n返回 dp[amount]（无穷大则 -1）",
+      "code": "def coinChange(coins, amount):\n    INF = float('inf')\n    dp = [0] + [INF] * amount\n    for j in range(1, amount + 1):\n        for c in coins:\n            if c <= j and dp[j - c] + 1 < dp[j]:\n                dp[j] = dp[j - c] + 1   # 用一枚 c 面额\n    return -1 if dp[amount] == INF else dp[amount]",
+      "weight": 4
+    },
+    {
+      "id": "lc0518",
+      "type": "recall",
+      "stem": "LC 518 · 零钱兑换 II：给你不同面额的硬币数组 coins 和总金额 amount，每种硬币数量无限，求凑成总金额的硬币组合数（凑法不考虑顺序）。示例：输入 amount=5、coins=[1,2,5]，输出 4（5=5、5=2+2+1、5=2+1+1+1、5=1+1+1+1+1）。",
+      "tags": [
+        "P2",
+        "Medium"
+      ],
+      "approach": {
+        "strategy": "完全背包计数，外币内金额保证组合",
+        "steps": [
+          "设 dp[j] 为凑出金额 j 的组合数，dp[0]=1（什么都不选一种凑法）",
+          "外层遍历硬币、内层遍历金额 j 从 c 到 amount：dp[j]+=dp[j-c]，保证同种硬币可重复用",
+          "外层换币内层推进，计数不含排列顺序，dp[amount] 即组合总数"
+        ],
+        "timeCx": "O(amount×len(coins))",
+        "spaceCx": "O(amount)"
+      },
+      "pseudocode": "dp = [1] + [0]*amount\n对每个硬币 c:\n    对 j 从 c 到 amount:\n        dp[j] += dp[j-c]\n返回 dp[amount]",
+      "code": "def change(amount, coins):\n    dp = [1] + [0] * amount\n    for c in coins:\n        for j in range(c, amount + 1):\n            dp[j] += dp[j - c]   # 追加一枚 c 的组合数\n    return dp[amount]",
+      "weight": 2
+    },
+    {
+      "id": "lc0300",
+      "type": "recall",
+      "stem": "LC 300 · 最长递增子序列：给你整数数组 nums，求其中最长严格递增子序列的长度。子序列可由原数组删除若干元素得到，不要求连续。示例：输入 nums=[10,9,2,5,3,7,101,18]，输出 4（一个最长递增子序列为 [2,3,7,101]）。",
+      "tags": [
+        "P0",
+        "Medium"
+      ],
+      "approach": {
+        "strategy": "贪心加二分，维护各长度最小尾元素",
+        "steps": [
+          "tails[i] 表示长度为 i+1 的递增子序列的最小可能结尾，tails 恒递增",
+          "对每个 x 在 tails 中二分找第一个大于等于 x 的位置 lo",
+          "lo 超尾则 x 追加（长度加一），否则替换 tails[lo] 为 x（结尾更小更优）",
+          "最终 len(tails) 即最长递增子序列长度"
+        ],
+        "timeCx": "O(n log n)",
+        "spaceCx": "O(n)"
+      },
+      "pseudocode": "tails = 空\n对每个 x:\n    二分找首个 ≥x 的位置 lo\n    若 lo 超出末尾: 追加 x\n    否则: tails[lo] = x\n返回 tails 长度",
+      "code": "def lengthOfLIS(nums):\n    tails = []\n    for x in nums:\n        lo, hi = 0, len(tails)\n        while lo < hi:\n            mid = (lo + hi) // 2\n            if tails[mid] < x:\n                lo = mid + 1\n            else:\n                hi = mid\n        if lo == len(tails):\n            tails.append(x)      # x 可延长子序列\n        else:\n            tails[lo] = x        # 换更小结尾更优\n    return len(tails)",
+      "weight": 4
+    },
+    {
+      "id": "lc1143",
+      "type": "recall",
+      "stem": "LC 1143 · 最长公共子序列：给定两个字符串 text1 和 text2，求它们最长公共子序列的长度。子序列可由原串删除若干字符得到，不要求连续；公共子序列即两串共有的子序列。示例：输入 text1=\"abcde\"、text2=\"ace\"，输出 3（最长公共子序列为 \"ace\"）。",
+      "tags": [
+        "P0",
+        "Medium"
+      ],
+      "approach": {
+        "strategy": "二维 DP，末字符相等则延长否则取大",
+        "steps": [
+          "设 dp[i][j] 为 a 前 i 个与 b 前 j 个字符的最长公共子序列长度，dp 全表按 i、j 从 1 起填",
+          "末字符相等 a[i-1]==b[j-1] 时 dp[i][j]=dp[i-1][j-1]+1",
+          "不相等时 dp[i][j]=max(dp[i-1][j], dp[i][j-1])，即丢弃 a 或 b 的末字符取更长者",
+          "边界 dp[0][*] 与 dp[*][0] 为 0，dp[m][n] 即答案"
+        ],
+        "timeCx": "O(m×n)",
+        "spaceCx": "O(m×n)"
+      },
+      "pseudocode": "dp 为 (m+1)×(n+1) 全零表\n对 i 从 1 到 m, j 从 1 到 n:\n    若 a[i-1]==b[j-1]: dp[i][j]=dp[i-1][j-1]+1\n    否则: dp[i][j]=max(dp[i-1][j], dp[i][j-1])\n返回 dp[m][n]",
+      "code": "def longestCommonSubsequence(a, b):\n    m, n = len(a), len(b)\n    dp = [[0] * (n + 1) for _ in range(m + 1)]\n    for i in range(1, m + 1):\n        for j in range(1, n + 1):\n            if a[i - 1] == b[j - 1]:\n                dp[i][j] = dp[i - 1][j - 1] + 1     # 末字符匹配延长\n            else:\n                dp[i][j] = max(dp[i - 1][j], dp[i][j - 1])\n    return dp[m][n]",
+      "weight": 4
+    },
+    {
+      "id": "lc0072",
+      "type": "recall",
+      "stem": "LC 72 · 编辑距离：给你两个单词 word1 和 word2，返回将 word1 转换成 word2 所使用的最少操作数。每次可插入一个字符、删除一个字符或替换一个字符。示例：输入 word1=\"horse\"、word2=\"ros\"，输出 3（将 h 替换为 r 得 rorse，删除 r 得 rose，删除 e 得 ros）。",
+      "tags": [
+        "P2",
+        "Hard"
+      ],
+      "approach": {
+        "strategy": "二维 DP，末字符分相等与三种操作",
+        "steps": [
+          "设 dp[i][j] 为 a 前 i 个字符变成 b 前 j 个字符的最少操作数，边界 dp[i][0]=i（全删）、dp[0][j]=j（全插）",
+          "末字符相等时 dp[i][j]=dp[i-1][j-1]，无需操作",
+          "不等时取三选一加一：替换 dp[i-1][j-1]、删除 a 末字符 dp[i-1][j]、插入 dp[i][j-1]",
+          "dp[m][n] 即答案，操作数与逆序无关"
+        ],
+        "timeCx": "O(m×n)",
+        "spaceCx": "O(m×n)"
+      },
+      "pseudocode": "dp[i][0]=i, dp[0][j]=j\n对 i 从 1 到 m, j 从 1 到 n:\n    若 a[i-1]==b[j-1]: dp[i][j]=dp[i-1][j-1]\n    否则: dp[i][j]=min(替换, 删a尾, 插b尾)+1\n返回 dp[m][n]",
+      "code": "def minDistance(a, b):\n    m, n = len(a), len(b)\n    dp = [[0] * (n + 1) for _ in range(m + 1)]\n    for i in range(m + 1):\n        dp[i][0] = i            # 删光 a\n    for j in range(n + 1):\n        dp[0][j] = j            # 插出 b\n    for i in range(1, m + 1):\n        for j in range(1, n + 1):\n            if a[i - 1] == b[j - 1]:\n                dp[i][j] = dp[i - 1][j - 1]\n            else:\n                dp[i][j] = min(dp[i - 1][j - 1], dp[i - 1][j], dp[i][j - 1]) + 1\n    return dp[m][n]",
+      "weight": 2
+    },
+    {
+      "id": "lc0053",
+      "type": "recall",
+      "stem": "LC 53 · 最大子数组和：给你整数数组 nums，找出其中具有最大和的连续子数组（至少含一个元素），返回其最大和。示例：输入 nums=[-2,1,-3,4,-1,2,1,-5,4]，输出 6（连续子数组 [4,-1,2,1] 的和最大）。",
+      "tags": [
+        "P0",
+        "Medium"
+      ],
+      "approach": {
+        "strategy": "Kadane 算法，前缀和为负即弃",
+        "steps": [
+          "设 pre 为以当前元素结尾的最大子数组和：pre = max(pre + x, x)，负前缀直接舍弃",
+          "遍历中同步维护历史最大值 ans = max(ans, pre)",
+          "ans 初始为负无穷，保证至少含一个元素，遍历结束即答案"
+        ],
+        "timeCx": "O(n)",
+        "spaceCx": "O(1)"
+      },
+      "pseudocode": "pre = 0, ans = 负无穷\n对每个 x:\n    pre = max(pre + x, x)\n    ans = max(ans, pre)\n返回 ans",
+      "code": "def maxSubArray(nums):\n    pre, ans = 0, float('-inf')\n    for x in nums:\n        pre = max(pre + x, x)   # 以 x 结尾的最大和\n        ans = max(ans, pre)     # 记录历史最优\n    return ans",
+      "weight": 5
+    },
+    {
+      "id": "lc0152",
+      "type": "recall",
+      "stem": "LC 152 · 乘积最大子数组：给你整数数组 nums，找出其中乘积最大的非空连续子数组，返回该乘积。数组中可能含负数，负负得正是关键。示例：输入 nums=[2,3,-2,4]，输出 6（子数组 [2,3] 乘积最大）。",
+      "tags": [
+        "P1",
+        "Medium"
+      ],
+      "approach": {
+        "strategy": "同时维护最大与最小乘积，负数交换",
+        "steps": [
+          "负数乘进来会让最大变最小、最小变最大，故须同时维护以当前元素结尾的最大乘积 maxP 与最小乘积 minP",
+          "转移时用上一轮的 maxP、minP 同步计算：候选为 maxP×x、minP×x、x 三者",
+          "首元素初始化 maxP=minP=ans=nums[0]，遍历其余元素更新 ans"
+        ],
+        "timeCx": "O(n)",
+        "spaceCx": "O(1)"
+      },
+      "pseudocode": "maxP = minP = ans = nums[0]\n对每个后续 x:\n    新maxP = max(maxP*x, minP*x, x)\n    新minP = min(maxP*x, minP*x, x)\n    ans = max(ans, 新maxP)\n返回 ans",
+      "code": "def maxProduct(nums):\n    ans = maxP = minP = nums[0]\n    for x in nums[1:]:\n        maxP, minP = max(maxP * x, minP * x, x), min(maxP * x, minP * x, x)\n        ans = max(ans, maxP)   # 负数可能翻盘，双端都记\n    return ans",
+      "weight": 3
+    },
+    {
+      "id": "lc0005",
+      "type": "recall",
+      "stem": "LC 5 · 最长回文子串：给你字符串 s，返回 s 中最长的回文子串。子串要求连续。示例：输入 s=\"babad\"，输出 \"bab\"（\"aba\" 同样是合法答案）。",
+      "tags": [
+        "P0",
+        "Medium"
+      ],
+      "approach": {
+        "strategy": "中心扩展，枚举奇偶两类中心",
+        "steps": [
+          "回文对称中心共 2n-1 个：n 个字符位（奇长度）与 n-1 个相邻间隙（偶长度）",
+          "从中心 l、r 向两侧扩展，直到越界或字符不等，得到一段回文区间",
+          "逐中心扩展后记录最长的区间，返回对应子串"
+        ],
+        "timeCx": "O(n²)",
+        "spaceCx": "O(1)"
+      },
+      "pseudocode": "定义 expand(l, r): 双指针向两侧扩到不能再扩, 返回区间\n对每个 i:\n    记录 expand(i, i) 与 expand(i, i+1) 中更长者\n返回最长区间对应子串",
+      "code": "def longestPalindrome(s):\n    def expand(l, r):\n        while l >= 0 and r < len(s) and s[l] == s[r]:\n            l -= 1\n            r += 1\n        return l + 1, r - 1      # 回退到合法区间\n    start, end = 0, 0\n    for i in range(len(s)):\n        for l, r in (expand(i, i), expand(i, i + 1)):   # 奇偶中心\n            if r - l > end - start:\n                start, end = l, r\n    return s[start:end + 1]",
+      "weight": 5
+    },
+    {
+      "id": "lc0062",
+      "type": "recall",
+      "stem": "LC 62 · 不同路径：一个机器人位于 m×n 网格的左上角，每次只能向下或向右移动一步，问到达右下角共有多少条不同路径。约束 1≤m,n≤100。示例：输入 m=3、n=7，输出 28。",
+      "tags": [
+        "P1",
+        "Medium"
+      ],
+      "approach": {
+        "strategy": "一维滚动 DP，逐行累加路径数",
+        "steps": [
+          "设 dp[j] 为到达当前行第 j 列的路径数，首行全为 1（只能一路向右）",
+          "逐行向下推进：dp[j] += dp[j-1]，即来自上方 dp[j] 与左方 dp[j-1] 之和",
+          "推完 m-1 行后 dp[n-1] 即答案"
+        ],
+        "timeCx": "O(m×n)",
+        "spaceCx": "O(n)"
+      },
+      "pseudocode": "dp = n 个 1\n重复 m-1 次:\n    对 j 从 1 到 n-1:\n        dp[j] += dp[j-1]\n返回 dp[-1]",
+      "code": "def uniquePaths(m, n):\n    dp = [1] * n              # 首行全 1\n    for _ in range(1, m):\n        for j in range(1, n):\n            dp[j] += dp[j - 1]   # 上方 + 左方\n    return dp[-1]",
+      "weight": 3,
+      "images": [
+        "img/lc0062-1.png"
+      ]
+    },
+    {
+      "id": "lc0064",
+      "type": "recall",
+      "stem": "LC 64 · 最小路径和：给定 m×n 非负整数网格 grid，从左上角走到右下角，每次只能向下或向右移动一步，求路径上数字总和的最小值。示例：输入 grid=[[1,3,1],[1,5,1],[4,2,1]]，输出 7（路径 1→3→1→1→1 总和最小）。",
+      "tags": [
+        "P1",
+        "Medium"
+      ],
+      "approach": {
+        "strategy": "一维滚动 DP，取上与左的较小者",
+        "steps": [
+          "设 dp[j] 为到达当前行第 j 列的最小路径和",
+          "每行开始先把 dp[0] 累加该行首格（左边界只能来自上方）",
+          "其余列 dp[j]=min(dp[j], dp[j-1])+grid[i][j]，min 中 dp[j] 来自上一行、dp[j-1] 来自左方",
+          "首行直接逐列累加即可，dp[n-1] 即答案"
+        ],
+        "timeCx": "O(m×n)",
+        "spaceCx": "O(n)"
+      },
+      "pseudocode": "dp = n 个无穷大, dp[0]=0\n对每一行 i:\n    dp[0] += grid[i][0]\n    对 j 从 1 到 n-1:\n        dp[j] = min(dp[j], dp[j-1]) + grid[i][j]\n返回 dp[-1]",
+      "code": "def minPathSum(grid):\n    m, n = len(grid), len(grid[0])\n    dp = [float('inf')] * n\n    dp[0] = 0\n    for i in range(m):\n        dp[0] += grid[i][0]   # 左边界只能来自上\n        for j in range(1, n):\n            dp[j] = min(dp[j], dp[j - 1]) + grid[i][j]   # 上与左取小\n    return dp[-1]",
+      "weight": 3,
+      "images": [
+        "img/lc0064-1.jpg"
+      ]
+    },
+    {
+      "id": "lc0121",
+      "type": "recall",
+      "stem": "LC 121 · 买卖股票的最佳时机：给定数组 prices，第 i 个元素是股票第 i 天的价格，只允许买入一次并卖出一次，求能获得的最大利润；不能获利则返回 0。示例：输入 prices=[7,1,5,3,6,4]，输出 5（第 2 天买入、第 5 天卖出，利润 6-1=5）。",
+      "tags": [
+        "P0",
+        "Easy"
+      ],
+      "approach": {
+        "strategy": "一次遍历，维护历史最低价",
+        "steps": [
+          "遍历价格，lo 维护到目前为止的最低买入价 lo=min(lo, p)",
+          "当天卖出的最大利润为 p-lo，用 ans 取历史最大",
+          "ans 初始为 0，天然覆盖不能获利的情况"
+        ],
+        "timeCx": "O(n)",
+        "spaceCx": "O(1)"
+      },
+      "pseudocode": "lo = 正无穷, ans = 0\n对每个价格 p:\n    lo = min(lo, p)\n    ans = max(ans, p - lo)\n返回 ans",
+      "code": "def maxProfit(prices):\n    lo, ans = float('inf'), 0\n    for p in prices:\n        lo = min(lo, p)        # 历史最低买入价\n        ans = max(ans, p - lo) # 当天卖出的利润\n    return ans",
+      "weight": 4
+    },
+    {
+      "id": "lc0122",
+      "type": "recall",
+      "stem": "LC 122 · 买卖股票的最佳时机 II：给定数组 prices 表示每天股价，可以多次买卖（同时最多持有一股），求能获得的最大利润。示例：输入 prices=[7,1,5,3,6,4]，输出 7（第 2 天买第 3 天卖赚 4，第 4 天买第 5 天卖赚 3）。",
+      "tags": [
+        "P1",
+        "Medium"
+      ],
+      "approach": {
+        "strategy": "贪心收集所有上涨日差价",
+        "steps": [
+          "可多次交易等价于把每一段上涨拆成逐日交易，只需累加所有正的日差价",
+          "遍历时 ans += max(0, prices[i]-prices[i-1])",
+          "下跌日利润记 0 不参与，总和即最大利润"
+        ],
+        "timeCx": "O(n)",
+        "spaceCx": "O(1)"
+      },
+      "pseudocode": "ans = 0\n对 i 从 1 到末尾:\n    ans += max(0, 今天价 - 昨天价)\n返回 ans",
+      "code": "def maxProfit(prices):\n    ans = 0\n    for i in range(1, len(prices)):\n        ans += max(0, prices[i] - prices[i - 1])   # 只收上涨段\n    return ans",
+      "weight": 3
+    },
+    {
+      "id": "lc0123",
+      "type": "recall",
+      "stem": "LC 123 · 买卖股票的最佳时机 III：给定数组 prices 表示每天股价，最多完成两笔交易（同时最多持有一股），求最大利润。示例：输入 prices=[3,3,5,0,0,3,1,4]，输出 6（第 4 天买入第 6 天卖出赚 3，第 7 天买入第 8 天卖出赚 3）。",
+      "tags": [
+        "P2",
+        "Hard"
+      ],
+      "approach": {
+        "strategy": "四变量一遍扫：两次买入两次卖出",
+        "steps": [
+          "一天内四个状态按序转移：buy1 第一次持有、sell1 第一次清仓、buy2 第二次持有、sell2 第二次清仓",
+          "buy1=max(buy1,-p)、sell1=max(sell1,buy1+p)，第二笔同理基于 sell1 接续",
+          "四变量初值分别为负无穷与 0，遍历结束 sell2 即答案（一笔不做的 0 情形天然包含）"
+        ],
+        "timeCx": "O(n)",
+        "spaceCx": "O(1)"
+      },
+      "pseudocode": "buy1=buy2=负无穷, sell1=sell2=0\n对每个价格 p:\n    buy1 = max(buy1, -p)\n    sell1 = max(sell1, buy1+p)\n    buy2 = max(buy2, sell1-p)\n    sell2 = max(sell2, buy2+p)\n返回 sell2",
+      "code": "def maxProfit(prices):\n    buy1 = buy2 = float('-inf')\n    sell1 = sell2 = 0\n    for p in prices:\n        buy1 = max(buy1, -p)          # 第一笔买入\n        sell1 = max(sell1, buy1 + p)  # 第一笔卖出\n        buy2 = max(buy2, sell1 - p)   # 第二笔买入\n        sell2 = max(sell2, buy2 + p)  # 第二笔卖出\n    return sell2",
+      "weight": 2
+    },
+    {
+      "id": "lc0139",
+      "type": "recall",
+      "stem": "LC 139 · 单词拆分：给你字符串 s 和字符串列表 wordDict 作字典，判断 s 能否被拆成若干字典单词的拼接（字典单词可重复使用）。示例：输入 s=\"leetcode\"、wordDict=[\"leet\",\"code\"]，输出 true（可拆成 \"leet\"+\"code\"）。",
+      "tags": [
+        "P1",
+        "Medium"
+      ],
+      "approach": {
+        "strategy": "区间可达 DP，枚举最后一段",
+        "steps": [
+          "设 dp[i] 表示 s 前 i 个字符能否被拆出，dp[0]=True（空串）",
+          "对每个 i 枚举断点 j：dp[j] 为真且 s[j:i] 在字典中则 dp[i]=True，找到即跳出",
+          "字典先转集合加速查找，dp[n] 即答案"
+        ],
+        "timeCx": "O(n²)",
+        "spaceCx": "O(n)"
+      },
+      "pseudocode": "ws = 字典集合\ndp = [True] + [False]*n\n对 i 从 1 到 n:\n    对 j 从 0 到 i-1:\n        若 dp[j] 且 s[j:i] 在 ws: dp[i]=True, 跳出\n返回 dp[n]",
+      "code": "def wordBreak(s, wordDict):\n    ws = set(wordDict)\n    n = len(s)\n    dp = [True] + [False] * n\n    for i in range(1, n + 1):\n        for j in range(i):\n            if dp[j] and s[j:i] in ws:   # 最后一段落在字典里\n                dp[i] = True\n                break\n    return dp[n]",
+      "weight": 3
+    },
+    {
+      "id": "lc0279",
+      "type": "recall",
+      "stem": "LC 279 · 完全平方数：给你整数 n，返回和为 n 的完全平方数的最少数量。完全平方数即 1、4、9、16 这类数，同一数可重复使用。示例：输入 n=12，输出 3（12=4+4+4）。",
+      "tags": [
+        "P1",
+        "Medium"
+      ],
+      "approach": {
+        "strategy": "完全背包求最少个数，物品为平方数",
+        "steps": [
+          "设 dp[j] 为凑出 j 的最少平方数个数，dp[0]=0、其余无穷大",
+          "对每个 j 从小平方数 k×k（k 从 1 起）中取最小：dp[j]=min(dp[j], dp[j-k×k]+1)",
+          "k×k 大于 j 即停，dp[n] 即答案"
+        ],
+        "timeCx": "O(n×√n)",
+        "spaceCx": "O(n)"
+      },
+      "pseudocode": "dp = [0] + [无穷大]*n\n对 j 从 1 到 n:\n    k = 1\n    只要 k*k ≤ j:\n        dp[j] = min(dp[j], dp[j-k*k]+1)\n        k += 1\n返回 dp[n]",
+      "code": "def numSquares(n):\n    INF = float('inf')\n    dp = [0] + [INF] * n\n    for j in range(1, n + 1):\n        k = 1\n        while k * k <= j:\n            if dp[j - k * k] + 1 < dp[j]:\n                dp[j] = dp[j - k * k] + 1   # 用一枚 k*k\n            k += 1\n    return dp[n]",
+      "weight": 3
+    },
+    {
+      "id": "lc0010",
+      "type": "recall",
+      "stem": "LC 10 · 正则表达式匹配：给你字符串 s 和模式 p，实现支持 . 与 * 的匹配：. 匹配任意单个字符，* 匹配前一个字符零次或多次，整个 s 与 p 须完全匹配。示例：输入 s=\"aa\"、p=\"a\"，输出 false；输入 s=\"aa\"、p=\"a*\"，输出 true。",
+      "tags": [
+        "P2",
+        "Hard"
+      ],
+      "approach": {
+        "strategy": "二维 DP，星号分支匹配零次或多次",
+        "steps": [
+          "设 dp[i][j] 为 s 前 i 个与 p 前 j 个字符是否匹配，dp[0][0]=True",
+          "空串对模式：p[j-1] 为 * 时 dp[0][j]=dp[0][j-2]，星号可消掉前面的字符",
+          "p 末位为 * 时：匹配零次看 dp[i][j-2]；匹配多次要求 p[j-2] 等于 s[i-1] 或为点号，看 dp[i-1][j]",
+          "普通字符或点号则看左上角 dp[i-1][j-1] 是否为真且当前字符相容，dp[m][n] 即答案"
+        ],
+        "timeCx": "O(m×n)",
+        "spaceCx": "O(m×n)"
+      },
+      "pseudocode": "dp[0][0]=True\n空串对模式: 星号消前字符, dp[0][j]=dp[0][j-2]\n对 i,j:\n    若 p[j-1] 是 '*':\n        dp[i][j] = dp[i][j-2] 或 (p[j-2] 匹配 s[i-1] 且 dp[i-1][j])\n    否则: dp[i][j] = dp[i-1][j-1] 且 p[j-1] 匹配 s[i-1]\n返回 dp[m][n]",
+      "code": "def isMatch(s, p):\n    m, n = len(s), len(p)\n    dp = [[False] * (n + 1) for _ in range(m + 1)]\n    dp[0][0] = True\n    for j in range(2, n + 1):\n        dp[0][j] = p[j - 1] == '*' and dp[0][j - 2]   # 星号消前字符\n    for i in range(1, m + 1):\n        for j in range(1, n + 1):\n            if p[j - 1] == '*':\n                dp[i][j] = dp[i][j - 2] or (dp[i - 1][j] and p[j - 2] in (s[i - 1], '.'))\n            else:\n                dp[i][j] = dp[i - 1][j - 1] and p[j - 1] in (s[i - 1], '.')\n    return dp[m][n]",
+      "weight": 2
+    },
+    {
+      "id": "lc0032",
+      "type": "recall",
+      "stem": "LC 32 · 最长有效括号：给你只含左右括号的字符串 s，找出最长的格式正确且连续的有效括号子串的长度。示例：输入 s=\"(()\"，输出 2（最长有效子串为 \"()\"）。",
+      "tags": [
+        "P2",
+        "Hard"
+      ],
+      "approach": {
+        "strategy": "栈存下标，栈底垫分界位置",
+        "steps": [
+          "栈底始终保存最近一个未匹配括号的下标作分界，初始压入 -1",
+          "遇左括号压入其下标；遇右括号先弹栈",
+          "弹出后栈空说明该右括号未匹配，压入其下标当新分界；否则当前有效长度为 i-栈顶，取历史最大"
+        ],
+        "timeCx": "O(n)",
+        "spaceCx": "O(n)"
+      },
+      "pseudocode": "stack = [-1]\n对每个下标 i, 字符 c:\n    若 c 是 '(': 压入 i\n    否则:\n        弹栈\n        栈空则压入 i 作分界\n        否则 ans = max(ans, i - 栈顶)\n返回 ans",
+      "code": "def longestValidParentheses(s):\n    stack = [-1]             # 栈底垫分界下标\n    ans = 0\n    for i, c in enumerate(s):\n        if c == '(':\n            stack.append(i)\n        else:\n            stack.pop()\n            if not stack:\n                stack.append(i)          # 未匹配，新分界\n            else:\n                ans = max(ans, i - stack[-1])   # 当前有效段长\n    return ans",
+      "weight": 2
+    },
+    {
+      "id": "lc0416",
+      "type": "recall",
+      "stem": "LC 416 · 分割等和子集：给你只含正整数的非空数组 nums，判断能否分割成两个子集使两子集元素和相等。示例：输入 nums=[1,5,11,5]，输出 true（可分割为 [1,5,5] 与 [11]）。",
+      "tags": [
+        "P0",
+        "Medium"
+      ],
+      "approach": {
+        "strategy": "转化为 01 背包能否凑出半和",
+        "steps": [
+          "总和为奇数直接 false；目标 target 为总和的一半",
+          "设 dp[j] 表示能否从数组中选出和恰为 j 的子集，dp[0]=True",
+          "逐个物品（正整数）倒序枚举 j 从 target 到 x：dp[j] |= dp[j-x]，倒序保证每数只用一次",
+          "dp[target] 即答案"
+        ],
+        "timeCx": "O(n×target)",
+        "spaceCx": "O(target)"
+      },
+      "pseudocode": "total 为奇数则返回假\ntarget = total/2\ndp = [True] + [False]*target\n对每个 x:\n    对 j 从 target 倒序到 x:\n        dp[j] = dp[j] 或 dp[j-x]\n返回 dp[target]",
+      "code": "def canPartition(nums):\n    total = sum(nums)\n    if total % 2:\n        return False\n    target = total // 2\n    dp = [False] * (target + 1)\n    dp[0] = True\n    for x in nums:\n        for j in range(target, x - 1, -1):   # 倒序只用一次\n            if dp[j - x]:\n                dp[j] = True\n    return dp[target]",
+      "weight": 4
+    },
+    {
+      "id": "lc0494",
+      "type": "recall",
+      "stem": "LC 494 · 目标和：给你非负整数数组 nums 和目标整数 target，向每个数前添加 + 或 - 后串起来计算，求运算结果等于 target 的不同表达式数目。示例：输入 nums=[1,1,1,1,1]、target=3，输出 5（一个 -1 与四个 +1 的组合共 C(5,1)=5 种）。",
+      "tags": [
+        "P2",
+        "Medium"
+      ],
+      "approach": {
+        "strategy": "转化为子集和计数，01 背包装满法",
+        "steps": [
+          "设取正数的子集和为 P，则 P-(total-P)=target，即 P=(target+total)/2，问题变成数子集和为 P 的方案数",
+          "(target+total) 为奇数或 |target| 大于 total 则无解返回 0",
+          "01 背包计数：dp[j] 为凑出 j 的子集数，dp[0]=1，每数倒序累加 dp[j]+=dp[j-x]",
+          "dp[P] 即答案"
+        ],
+        "timeCx": "O(n×P)",
+        "spaceCx": "O(P)"
+      },
+      "pseudocode": "w = (target+total)/2, 非法则返回 0\ndp = [1] + [0]*w\n对每个 x:\n    对 j 从 w 倒序到 x:\n        dp[j] += dp[j-x]\n返回 dp[w]",
+      "code": "def findTargetSumWays(nums, target):\n    total = sum(nums)\n    if (target + total) % 2 or abs(target) > total:\n        return 0              # 凑不出整数子集和\n    w = (target + total) // 2\n    dp = [1] + [0] * w\n    for x in nums:\n        for j in range(w, x - 1, -1):   # 倒序每数只用一次\n            dp[j] += dp[j - x]\n    return dp[w]",
+      "weight": 2
+    }
+  ]
+}

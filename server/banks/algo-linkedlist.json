@@ -1,0 +1,314 @@
+{
+  "id": "algo-linkedlist",
+  "name": "算法 · 链表与设计",
+  "version": 1,
+  "updatedAt": "10-08",
+  "questions": [
+    {
+      "id": "lc0206",
+      "type": "recall",
+      "stem": "LC 206 · 反转链表：给你单链表的头节点 head，反转整个链表并返回新链表的头节点。结点数范围 0 到 5000。示例：输入 [1,2,3,4,5]，输出 [5,4,3,2,1]。",
+      "tags": [
+        "P0",
+        "Easy"
+      ],
+      "images": [
+        "img/lc0206-1.jpg",
+        "img/lc0206-2.jpg"
+      ],
+      "approach": {
+        "strategy": "迭代三指针 prev/curr/next 逐结点反接",
+        "steps": [
+          "prev 置空，curr 指向头结点",
+          "每步先保存 next=curr.next，再令 curr.next=prev 完成反接",
+          "prev 与 curr 同步前移，curr 为空时 prev 即新头"
+        ],
+        "timeCx": "O(n)",
+        "spaceCx": "O(1)"
+      },
+      "pseudocode": "prev = 空\ncurr = head\nwhile curr 非空:\n    next = curr.next\n    curr.next = prev\n    prev = curr\n    curr = next\nreturn prev",
+      "code": "def reverseList(head):\n    prev, curr = None, head\n    while curr:\n        nxt = curr.next      # 先存后继\n        curr.next = prev     # 反指前驱\n        prev, curr = curr, nxt\n    return prev",
+      "weight": 5
+    },
+    {
+      "id": "lc0025",
+      "type": "recall",
+      "stem": "LC 25 · K 个一组翻转链表：给你链表头节点 head 与整数 k，每 k 个结点一组就地翻转；剩余不足 k 个的结点保持原有顺序，返回修改后的链表。结点数 n 满足 1<=n<=5000，1<=k<=n。示例：输入 head=[1,2,3,4,5], k=2，输出 [2,1,4,3,5]。",
+      "tags": [
+        "P0",
+        "Hard"
+      ],
+      "images": [
+        "img/lc0025-1.jpg",
+        "img/lc0025-2.jpg"
+      ],
+      "approach": {
+        "strategy": "虚拟头分组，组内头插翻转后回接前后组",
+        "steps": [
+          "建虚拟头 dummy 指向 head，prev 指向每组的前驱结点",
+          "从 prev 连走 k 步确认本组凑满 k 个，中途遇空直接返回结果",
+          "组内头插翻转：以 nxt（下组起点）为锚，逐结点反接到 new_prev",
+          "prev 接新组头 new_prev，并移到原组头 first（新组尾）继续下一组"
+        ],
+        "timeCx": "O(n)",
+        "spaceCx": "O(1)"
+      },
+      "pseudocode": "dummy.next = head，prev = dummy\n循环:\n    tail = 从 prev 连走 k 步\n    中途遇空: return dummy.next   # 不足 k 个保持原序\n    nxt = tail.next\n    first = cur = prev.next，new_prev = nxt\n    while cur != nxt:            # 组内头插翻转\n        cur.next = new_prev，cur 前移，new_prev = 原 cur\n    prev.next = new_prev，prev = first\nreturn dummy.next",
+      "code": "def reverseKGroup(head, k):\n    dummy = ListNode(0, head)\n    prev = dummy\n    while True:\n        tail = prev\n        for _ in range(k):        # 确认本组凑满 k 个\n            tail = tail.next\n            if not tail:\n                return dummy.next # 不足 k 个保持原序\n        nxt = tail.next           # 下一组起点\n        first, cur, np_ = prev.next, prev.next, nxt\n        while cur != nxt:         # 组内头插翻转\n            cur.next, cur, np_ = np_, cur.next, cur\n        prev.next = np_           # 前驱接新组头\n        prev = first              # 原组头成新组尾\n",
+      "weight": 5
+    },
+    {
+      "id": "lc0021",
+      "type": "recall",
+      "stem": "LC 21 · 合并两个有序链表：将两条升序链表 list1 与 list2 合并为一条升序链表并返回头节点，直接拼接原有结点。两链长度均为 0 到 50。示例：输入 list1=[1,2,4], list2=[1,3,4]，输出 [1,1,2,3,4,4]。",
+      "tags": [
+        "P0",
+        "Easy"
+      ],
+      "images": [
+        "img/lc0021-1.jpg"
+      ],
+      "approach": {
+        "strategy": "虚拟头尾插归并，每次取较小者接上",
+        "steps": [
+          "建虚拟头 dummy 与尾指针 tail",
+          "双指针比较两链当前值，较小者接在 tail 后并前移",
+          "某链耗尽后把另一链剩余部分整体接上，返回 dummy.next"
+        ],
+        "timeCx": "O(n+m)",
+        "spaceCx": "O(1)"
+      },
+      "pseudocode": "dummy = 新结点，tail = dummy\nwhile l1 与 l2 都非空:\n    较小者接到 tail 后并前移，tail 前移\ntail.next = l1 与 l2 中非空者\nreturn dummy.next",
+      "code": "def mergeTwoLists(l1, l2):\n    dummy = tail = ListNode(0)\n    while l1 and l2:\n        if l1.val <= l2.val:     # 取较小者\n            tail.next, l1 = l1, l1.next\n        else:\n            tail.next, l2 = l2, l2.next\n        tail = tail.next\n    tail.next = l1 or l2         # 接上剩余\n    return dummy.next",
+      "weight": 4
+    },
+    {
+      "id": "lc0023",
+      "type": "recall",
+      "stem": "LC 23 · 合并 K 个升序链表：给定升序链表数组 lists，将全部链表合并为一条升序链表并返回其头节点。k 满足 0<=k<=10^4，各链长度之和不超过 10^4。示例：输入 lists=[[1,4,5],[1,3,4],[2,6]]，输出 [1,1,2,3,4,4,5,6]。",
+      "tags": [
+        "P1",
+        "Hard"
+      ],
+      "approach": {
+        "strategy": "小根堆存各链当前头，逐个弹出最小拼接",
+        "steps": [
+          "把所有非空链表头以 (值, 链下标) 入小根堆",
+          "每次弹堆顶最小结点接到结果尾，该链头前移，后继非空则入堆",
+          "堆空即合并完成，返回 dummy.next"
+        ],
+        "timeCx": "O(N log k)",
+        "spaceCx": "O(k)"
+      },
+      "pseudocode": "heap = [(非空链头值, 链下标)] 建小根堆\ndummy = tail = 新结点\nwhile heap 非空:\n    弹出 (值, i)，lists[i] 接到 tail 后\n    lists[i] 前移一位，新头非空则入堆\nreturn dummy.next",
+      "code": "from heapq import heapify, heappush, heappop\n\ndef mergeKLists(lists):\n    heap = [(l.val, i) for i, l in enumerate(lists) if l]\n    heapify(heap)               # 各链头入小根堆\n    dummy = tail = ListNode(0)\n    while heap:\n        _, i = heappop(heap)    # 弹最小值所在链\n        tail.next = lists[i]\n        lists[i] = lists[i].next\n        tail = tail.next\n        if lists[i]:            # 后继入堆\n            heappush(heap, (lists[i].val, i))\n    return dummy.next",
+      "weight": 3
+    },
+    {
+      "id": "lc0141",
+      "type": "recall",
+      "stem": "LC 141 · 环形链表：给定链表头 head，判断链表中是否存在环（某结点可经 next 指针再次到达）。pos 表示尾结点 next 指向的结点下标，仅用于描述、不作为参数传入。示例：输入 head=[3,2,0,-4], pos=1，输出 true。",
+      "tags": [
+        "P0",
+        "Easy"
+      ],
+      "images": [
+        "img/lc0141-1.png",
+        "img/lc0141-2.png",
+        "img/lc0141-3.png"
+      ],
+      "approach": {
+        "strategy": "快慢双指针同速差追赶，相遇即有环",
+        "steps": [
+          "slow 与 fast 都从头出发，每轮 slow 走一步、fast 走两步",
+          "fast 或 fast.next 到达空指针说明链有终点，无环",
+          "入环后每轮两者距离缩短 1，必然相遇，相遇即返回 true"
+        ],
+        "timeCx": "O(n)",
+        "spaceCx": "O(1)"
+      },
+      "pseudocode": "slow = fast = head\nwhile fast 且 fast.next 非空:\n    slow 前进一步\n    fast 前进两步\n    若 slow == fast: return true\nreturn false",
+      "code": "def hasCycle(head):\n    slow = fast = head\n    while fast and fast.next:\n        slow = slow.next        # 慢指针一步\n        fast = fast.next.next   # 快指针两步\n        if slow is fast:        # 相遇即有环\n            return True\n    return False",
+      "weight": 4
+    },
+    {
+      "id": "lc0142",
+      "type": "recall",
+      "stem": "LC 142 · 环形链表 II：给定链表头 head，若链表有环返回入环的第一个结点，无环返回 null；pos 含义同 141、不作为参数传入。示例：输入 head=[3,2,0,-4], pos=1，输出下标 1 的结点（值 2）。",
+      "tags": [
+        "P0",
+        "Medium"
+      ],
+      "images": [
+        "img/lc0142-1.png",
+        "img/lc0142-2.png",
+        "img/lc0142-3.png"
+      ],
+      "approach": {
+        "strategy": "快慢相遇后一针回头，同速再走必在入环点重合",
+        "steps": [
+          "先用 141 的快慢指针判环，fast 到达空则无环返回 null",
+          "相遇后把一个指针移回头结点，两指针都改为每轮走一步",
+          "设头到入环 a 步、入环到相遇 b 步、环剩余 c 步，有 a=c+(n-1)(b+c)，故再相遇处即入环点"
+        ],
+        "timeCx": "O(n)",
+        "spaceCx": "O(1)"
+      },
+      "pseudocode": "slow = fast = head\nwhile fast 且 fast.next 非空:\n    slow 前进一步，fast 前进两步\n    若相遇:\n        p = head\n        while p != slow: p 与 slow 各前进一步\n        return p              # 再相遇即入环点\nreturn 空",
+      "code": "def detectCycle(head):\n    slow = fast = head\n    while fast and fast.next:\n        slow, fast = slow.next, fast.next.next\n        if slow is fast:      # 有环，得相遇点\n            p = head\n            while p is not slow:  # 同速再走\n                p, slow = p.next, slow.next\n            return p          # 再相遇即入环点\n    return None",
+      "weight": 4
+    },
+    {
+      "id": "lc0160",
+      "type": "recall",
+      "stem": "LC 160 · 相交链表：给你两条无环单链表头 headA 与 headB，两链可能从某结点起共享后续全部结点，返回该相交结点；无交点返回 null，交点之后不会再分叉。示例：输入 listA=[4,1,8,4,5], listB=[5,6,1,8,4,5]（两链自值 8 的结点起相交），输出相交结点（值 8）。",
+      "tags": [
+        "P1",
+        "Easy"
+      ],
+      "images": [
+        "img/lc0160-1.png",
+        "img/lc0160-2.png",
+        "img/lc0160-3.png",
+        "img/lc0160-4.png"
+      ],
+      "approach": {
+        "strategy": "双指针互串两链走等长路程，同步到交点",
+        "steps": [
+          "a、b 分别从 headA、headB 出发逐结点前进",
+          "走完自己的链后跳到另一条链头继续（a 转 headB，b 转 headA）",
+          "两者各走 m+n 路程后同时到达交点；无交点则同时到达 null 退出"
+        ],
+        "timeCx": "O(m+n)",
+        "spaceCx": "O(1)"
+      },
+      "pseudocode": "a = headA，b = headB\nwhile a != b:\n    a = a.next，a 为空则转 headB\n    b = b.next，b 为空则转 headA\nreturn a",
+      "code": "def getIntersectionNode(headA, headB):\n    a, b = headA, headB\n    while a is not b:\n        a = a.next if a else headB  # 走完转对方\n        b = b.next if b else headA\n    return a                        # 交点或同 null",
+      "weight": 3
+    },
+    {
+      "id": "lc0019",
+      "type": "recall",
+      "stem": "LC 19 · 删除链表的倒数第 N 个结点：给定链表头 head 与整数 n，删除倒数第 n 个结点并返回头节点，要求尽量一趟扫描实现。链表长度 1 到 100，1<=n<=链表长度。示例：输入 head=[1,2,3,4,5], n=2，输出 [1,2,3,5]。",
+      "tags": [
+        "P0",
+        "Medium"
+      ],
+      "images": [
+        "img/lc0019-1.jpg"
+      ],
+      "approach": {
+        "strategy": "虚拟头加快慢指针，fast 先走 n+1 步定间隔",
+        "steps": [
+          "建 dummy 指向 head，fast 与 slow 都从 dummy 出发",
+          "fast 先前进 n+1 步，使两针间隔恰好 n 个结点",
+          "两针同速前进至 fast 为空，此时 slow.next 就是待删结点",
+          "越过待删结点 slow.next=slow.next.next，返回 dummy.next"
+        ],
+        "timeCx": "O(n)",
+        "spaceCx": "O(1)"
+      },
+      "pseudocode": "dummy.next = head，fast = slow = dummy\nfast 前进 n+1 步\nwhile fast 非空:\n    fast 与 slow 同步前进一步\nslow.next = slow.next.next\nreturn dummy.next",
+      "code": "def removeNthFromEnd(head, n):\n    dummy = fast = slow = ListNode(0, head)\n    for _ in range(n + 1):     # 快针先拉开 n+1\n        fast = fast.next\n    while fast:                # 同步推进到尾\n        fast, slow = fast.next, slow.next\n    slow.next = slow.next.next # 越过倒数第 n\n    return dummy.next",
+      "weight": 4
+    },
+    {
+      "id": "lc0143",
+      "type": "recall",
+      "stem": "LC 143 · 重排链表：给定单链表头 head，就地将结点重排为 L0→Ln→L1→Ln-1→L2→Ln-2→… 的锯齿形式，无返回值。结点数 1 到 5×10^4。示例：输入 head=[1,2,3,4,5]，重排后链表为 [1,5,2,4,3]。",
+      "tags": [
+        "P2",
+        "Medium"
+      ],
+      "images": [
+        "img/lc0143-1.png",
+        "img/lc0143-2.png"
+      ],
+      "approach": {
+        "strategy": "快慢找中点断链，后半反转后交替拼接",
+        "steps": [
+          "快慢指针找中点 slow，在中点断开成前后两链",
+          "反转后半链得 prev",
+          "从前链与后链依次各取一个结点交错拼接，直到后链用尽"
+        ],
+        "timeCx": "O(n)",
+        "spaceCx": "O(1)"
+      },
+      "pseudocode": "快慢指针找中点 slow\nl2 = slow.next，slow.next = 空\n反转 l2 得 prev\nl1 = head，l2 = prev\nwhile l2 非空:\n    n1 = l1.next，n2 = l2.next\n    l1.next = l2，l2.next = n1\n    l1 = n1，l2 = n2",
+      "code": "def reorderList(head):\n    slow = fast = head\n    while fast.next and fast.next.next:  # 找中点\n        slow, fast = slow.next, fast.next.next\n    l2, slow.next, prev = slow.next, None, None\n    while l2:                            # 反转后半\n        l2.next, l2, prev = prev, l2.next, l2\n    l1, l2 = head, prev\n    while l2:                            # 交替拼接\n        n1, n2 = l1.next, l2.next\n        l1.next, l2.next = l2, n1\n        l1, l2 = n1, n2",
+      "weight": 2
+    },
+    {
+      "id": "lc0138",
+      "type": "recall",
+      "stem": "LC 138 · 随机链表的复制：链表每个结点除 next 外还有 random 指针，可指向链表中任意结点或 null。构造该链表的深拷贝并返回拷贝链表头。结点数 0 到 1000。示例：输入 head=[[7,null],[13,0],[11,4],[10,2],[1,0]]（每项为 [值, random 指向下标]），输出结构完全相同且相互独立的新链表。",
+      "tags": [
+        "P1",
+        "Medium"
+      ],
+      "images": [
+        "img/lc0138-1.png",
+        "img/lc0138-2.png",
+        "img/lc0138-3.png"
+      ],
+      "approach": {
+        "strategy": "原地三趟：插拷贝、接 random、拆两链",
+        "steps": [
+          "第一趟在每个原结点 cur 后插入其拷贝结点，形成 1→1'→2→2' 交错链",
+          "第二趟令拷贝结点的 random 指向 cur.random 的 next（原结点的拷贝）",
+          "第三趟交错拆链：还原原链的同时把拷贝结点串成新链，返回新链头"
+        ],
+        "timeCx": "O(n)",
+        "spaceCx": "O(1)"
+      },
+      "pseudocode": "第一趟：cur 后插拷贝 Node(cur.val)，cur 移到拷贝之后\n第二趟：拷贝.random = cur.random 非空 ? cur.random.next : 空\n第三趟：交错摘出拷贝结点接到 dummy 尾，同时还原原链\nreturn dummy.next",
+      "code": "def copyRandomList(head):\n    cur = head\n    while cur:\n        cur.next = Node(cur.val, cur.next)  # 插入拷贝\n        cur = cur.next.next\n    cur = head\n    while cur:\n        cur.next.random = cur.random and cur.random.next  # 接 random\n        cur = cur.next.next\n    dummy = tail = Node(0)\n    cur = head\n    while cur:                        # 拆出拷贝链\n        tail.next, cur.next = cur.next, cur.next.next\n        tail, cur = tail.next, cur.next\n    return dummy.next",
+      "weight": 3
+    },
+    {
+      "id": "lc0146",
+      "type": "recall",
+      "stem": "LC 146 · LRU 缓存：设计 get 与 put 均为 O(1) 的 LRU 结构：get(key) 未命中返回 -1，命中返回值并记为最近使用；put(key, value) 写入或更新并记为最近使用，超容量时淘汰最久未使用的键。容量 1 到 3000。示例：LRUCache(2) 依次 put(1,1)、put(2,2)、get(1) 返回 1，再 put(3,3) 淘汰键 2，get(2) 返回 -1。",
+      "tags": [
+        "P0",
+        "Medium"
+      ],
+      "approach": {
+        "strategy": "OrderedDict 当双向链表用，命中移尾超容逐头",
+        "steps": [
+          "OrderedDict 内部即哈希表加双向链表，尾部为最新、头部为最旧",
+          "get 命中先 move_to_end(key) 提为最近使用再返回值",
+          "put 命中同样先 move_to_end，随后写入键值",
+          "长度超容量时 popitem(last=False) 淘汰头部最旧键"
+        ],
+        "timeCx": "O(1) 单次操作",
+        "spaceCx": "O(capacity)"
+      },
+      "pseudocode": "get(key):\n    key 不在字典: return -1\n    move_to_end(key)             # 提为最近使用\n    return 对应值\nput(key, value):\n    已存在则先 move_to_end(key)\n    写入键值\n    长度超容量: popitem(last=False)  # 淘汰最旧",
+      "code": "from collections import OrderedDict\nclass LRUCache:\n    def __init__(self, capacity):\n        self.cap, self.od = capacity, OrderedDict()\n    def get(self, key):\n        if key not in self.od:\n            return -1\n        self.od.move_to_end(key)     # 提为最近使用\n        return self.od[key]\n    def put(self, key, value):\n        if key in self.od:\n            self.od.move_to_end(key)\n        self.od[key] = value         # 写入或更新\n        if len(self.od) > self.cap:\n            self.od.popitem(last=False)  # 淘汰最旧",
+      "weight": 5
+    },
+    {
+      "id": "lc0460",
+      "type": "recall",
+      "stem": "LC 460 · LFU 缓存：设计 get 与 put 均为 O(1) 的 LFU 结构：语义同 LRU，但容量超限时淘汰使用次数最小的键，同次数中淘汰最久未使用者；容量为 0 时 put 不生效。示例：LFUCache(2) 依次 put(1,1)、put(2,2)、get(1) 返回 1，再 put(3,3) 淘汰键 2，随后 get(2) 返回 -1、get(3) 返回 3。",
+      "tags": [
+        "P2",
+        "Hard"
+      ],
+      "approach": {
+        "strategy": "频次分桶桶内按时序，minf 追踪最小频",
+        "steps": [
+          "val 存 key 到 [值, 频次]；freq 按频次分桶，桶内 OrderedDict 记同频时间序",
+          "每次命中经 _use 把键从旧频桶移入新频桶，旧桶空且等于 minf 时 minf 上调",
+          "满容量时弹出 freq[minf] 桶首（同频最久未用）并删键；新键入桶 1 且 minf 归 1"
+        ],
+        "timeCx": "O(1) 单次操作",
+        "spaceCx": "O(capacity)"
+      },
+      "pseudocode": "val: key -> [值, 频次]；freq: 频次 -> 有序键表\n_use(key)：频次加一，从旧桶移到新桶；旧桶空且等于 minf 则 minf 加一\nget：命中 _use 后返回值，否则 -1\nput：命中更新值并 _use；满容量弹 minf 桶首并删键；新键频次 1 入桶 1，minf=1",
+      "code": "from collections import defaultdict, OrderedDict\nclass LFUCache:\n    def __init__(self, cap):\n        self.cap, self.minf, self.val = cap, 0, {}\n        self.freq = defaultdict(OrderedDict)  # 频次分桶\n    def _use(self, key):    # 频次加一并移桶\n        self.val[key][1] += 1; f = self.val[key][1]; self.freq[f][key] = None; del self.freq[f-1][key]  # 移入新频桶\n        if not self.freq[f-1] and self.minf == f-1: self.minf = f\n    def get(self, key):\n        if key not in self.val: return -1\n        self._use(key); return self.val[key][0]\n    def put(self, key, value):\n        if key in self.val: self.val[key][0] = value; self._use(key); return\n        if self.cap and len(self.val) == self.cap: k = self.freq[self.minf].popitem(last=False)[0]; del self.val[k]  # 淘汰最小频最旧\n        if self.cap: self.val[key], self.freq[1][key], self.minf = [value, 1], None, 1",
+      "weight": 2
+    }
+  ]
+}

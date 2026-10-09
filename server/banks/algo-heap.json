@@ -1,0 +1,74 @@
+{
+  "id": "algo-heap",
+  "name": "算法 · 堆与 TopK",
+  "version": 1,
+  "updatedAt": "10-08",
+  "questions": [
+    {
+      "id": "lc0215",
+      "type": "recall",
+      "stem": "LC 215 · 数组中的第 K 个最大元素：给定整数数组 nums 与整数 k，返回数组中第 k 个最大的元素（按降序排好后第 k 位，重复元素不去重计入位次）。数组长度 1 到 10^5。示例：输入 nums=[3,2,1,5,6,4], k=2，输出 5；输入 nums=[3,2,3,1,2,4,5,5,6], k=4，输出 4。",
+      "tags": [
+        "P0",
+        "Medium"
+      ],
+      "approach": {
+        "strategy": "大小 k 的小根堆维护前 k 大，堆顶即答案",
+        "steps": [
+          "取前 k 个元素建大小为 k 的小根堆，堆顶是当前第 k 大",
+          "扫描其余元素，大于堆顶时弹出堆顶并把该元素入堆",
+          "扫描结束堆顶即第 k 大，全程堆内保持最大的 k 个数"
+        ],
+        "timeCx": "O(n log k)",
+        "spaceCx": "O(k)"
+      },
+      "pseudocode": "heap = nums 前 k 个建小根堆\nfor x in nums 其余元素:\n    if x > 堆顶:\n        弹堆顶，x 入堆\nreturn 堆顶",
+      "code": "from heapq import heapify, heapreplace\n\ndef findKthLargest(nums, k):\n    heap = nums[:k]\n    heapify(heap)               # k 大小的小根堆\n    for x in nums[k:]:\n        if x > heap[0]:\n            heapreplace(heap, x)  # 换掉更小的堆顶\n    return heap[0]              # 堆顶即第 k 大",
+      "weight": 5
+    },
+    {
+      "id": "lc0347",
+      "type": "recall",
+      "stem": "LC 347 · 前 K 个高频元素：给定整数数组 nums 与整数 k，返回其中出现频率前 k 高的元素，可按任意顺序返回。题目保证答案唯一。数组长度 1 到 10^5，k 不超过不同元素个数。示例：输入 nums=[1,1,1,2,2,3], k=2，输出 [1,2]。",
+      "tags": [
+        "P0",
+        "Medium"
+      ],
+      "approach": {
+        "strategy": "Counter 计频，小根堆维护频次前 k 高",
+        "steps": [
+          "Counter 统计每个元素出现次数",
+          "以 (频次, 元素) 入大小 k 的小根堆，堆满且新频次更高时换掉堆顶",
+          "堆中剩余 k 项的元素即答案"
+        ],
+        "timeCx": "O(n log k)",
+        "spaceCx": "O(n)"
+      },
+      "pseudocode": "cnt = Counter(nums)\nheap = 空堆\nfor (元素 x, 频次 c) in cnt:\n    if 堆未满 k: (c, x) 入堆\n    elif c > 堆顶频次: 弹堆顶，(c, x) 入堆\nreturn 堆中元素列表",
+      "code": "from collections import Counter\nfrom heapq import heappush, heapreplace\n\ndef topKFrequent(nums, k):\n    cnt = Counter(nums)          # 计频\n    heap = []\n    for x, c in cnt.items():\n        if len(heap) < k:\n            heappush(heap, (c, x))   # 小根堆存(频次,元素)\n        elif c > heap[0][0]:\n            heapreplace(heap, (c, x))  # 换掉低频堆顶\n    return [x for _, x in heap]",
+      "weight": 4
+    },
+    {
+      "id": "lc0295",
+      "type": "recall",
+      "stem": "LC 295 · 数据流的中位数：中位数是有序整数的中间值，偶数个时取中间两数的平均值。设计 MedianFinder 类：addNum 从数据流加入一个整数（调用至多 10^5 次），findMedian 返回当前已收整数的中位数。示例：依次 addNum(1)、addNum(2)，findMedian() 返回 1.5；再 addNum(3)，findMedian() 返回 2。",
+      "tags": [
+        "P2",
+        "Hard"
+      ],
+      "approach": {
+        "strategy": "双堆对半分：大根堆存小半小根堆存大半",
+        "steps": [
+          "lo 为大根堆存较小一半（Python 存相反数），hi 为小根堆存较大一半",
+          "addNum 时先入 lo，再把 lo 堆顶转送 hi，若 hi 更长再回送 lo 堆顶，维持 lo 比 hi 多 0 或 1 个",
+          "findMedian：lo 多一个时读 lo 堆顶；两堆等长时取两堆顶之和除以 2"
+        ],
+        "timeCx": "addNum O(log n)，findMedian O(1)",
+        "spaceCx": "O(n)"
+      },
+      "pseudocode": "addNum(x)：x 取负入 lo；hi 收 lo 堆顶；若 hi 比 lo 长则 lo 收 hi 堆顶\nfindMedian()：\n    lo 比 hi 多 1: 返回 -lo 堆顶\n    等长: 返回 (-lo 堆顶 + hi 堆顶) / 2",
+      "code": "from heapq import heappush, heappop\n\nclass MedianFinder:\n    def __init__(self):\n        self.lo, self.hi = [], []   # 大根堆(存负)/小根堆\n    def addNum(self, x):\n        heappush(self.lo, -x)\n        heappush(self.hi, -heappop(self.lo))  # 小半顶送大半\n        if len(self.hi) > len(self.lo):\n            heappush(self.lo, -heappop(self.hi))  # 平衡\n    def findMedian(self):\n        return -self.lo[0] if len(self.lo) > len(self.hi) \\\n            else (-self.lo[0] + self.hi[0]) / 2",
+      "weight": 2
+    }
+  ]
+}
